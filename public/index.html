@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LGCMS - Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="header"></div>
+
+    <main class="content-section">
+        <div class="hero-banner">
+            <h2>Local Government Complaint Management System</h2>
+            <p>Your platform for reporting local service delivery issues</p>
+            <div class="cta-buttons">
+                <a href="/login.html" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Login</a>
+                <a href="/register.html" class="btn btn-secondary"><i class="fas fa-user-plus"></i> Register</a>
+            </div>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <i class="fas fa-bullhorn"></i>
+                <h3>Report Issues</h3>
+                <p>Easily submit complaints about local services with photos and location details.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-tasks"></i>
+                <h3>Track Progress</h3>
+                <p>Monitor the status of your complaints from submission to resolution.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-comments"></i>
+                <h3>Get Updates</h3>
+                <p>Receive notifications and feedback from government officials.</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer"></div>
+
+    <script src="/js/shared.js"></script>
+    <script>
+        // Load partials
+        fetch('/partials/header.html')
+            .then(response => response.text())
+            .then(html => document.getElementById('header').innerHTML = html);
+            
+        fetch('/partials/footer.html')
+            .then(response => response.text())
+            .then(html => document.getElementById('footer').innerHTML = html);
+    </script>
+</body>
+</html>
