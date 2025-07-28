@@ -1,23 +1,29 @@
-<nav class="main-nav">
-    <a href="/index.html" class="nav-btn"><i class="fas fa-home"></i> Home</a>
-    <a href="/submit-complaint.html" class="nav-btn auth-required citizen-only">
-        <i class="fas fa-plus-circle"></i> Submit Complaint
-    </a>
-    <a href="/my-complaints.html" class="nav-btn auth-required citizen-only">
-        <i class="fas fa-list"></i> My Complaints
-    </a>
-    <a href="/admin-dashboard.html" class="nav-btn auth-required admin-only">
-        <i class="fas fa-tachometer-alt"></i> Dashboard
-    </a>
-    <div class="auth-buttons">
-        <a href="/login.html" class="nav-btn guest-only">
-            <i class="fas fa-sign-in-alt"></i> Login
-        </a>
-        <a href="/register.html" class="nav-btn guest-only">
-            <i class="fas fa-user-plus"></i> Register
-        </a>
-        <button id="nav-logout" class="nav-btn auth-only">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
-    </div>
+<nav class="p-4">
+    <ul class="flex flex-col space-y-3 text-lg">
+        <li>
+            <a href="../admin/admin-dashboard.html" class="flex items-center py-2 px-4 rounded-md hover:bg-gray-700 transition duration-200">
+                <i class="fas fa-tachometer-alt mr-3 text-xl"></i> Admin Dashboard
+            </a>
+        </li>
+        <li>
+            <a href="../citizen/my-complaints.html" class="flex items-center py-2 px-4 rounded-md hover:bg-gray-700 transition duration-200">
+                <i class="fas fa-list-alt mr-3 text-xl"></i> My Complaints
+            </a>
+        </li>
+        <li>
+            <a href="../citizen/submit-complaint.html" class="flex items-center py-2 px-4 rounded-md hover:bg-gray-700 transition duration-200">
+                <i class="fas fa-plus-circle mr-3 text-xl"></i> Submit Complaint
+            </a>
+        </li>
+        <li>
+            <a href="../citizen/profile.html" class="flex items-center py-2 px-4 rounded-md hover:bg-gray-700 transition duration-200">
+                <i class="fas fa-user-circle mr-3 text-xl"></i> Profile
+            </a>
+        </li>
+        <li>
+            <a href="../citizen/login.html" id="navLogout" class="flex items-center py-2 px-4 rounded-md hover:bg-gray-700 transition duration-200">
+                <i class="fas fa-sign-out-alt mr-3 text-xl"></i> Logout
+            </a>
+        </li>
+    </ul>
 </nav>

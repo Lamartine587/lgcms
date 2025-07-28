@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons (Hamburger, Close) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div id="sidebar-placeholder"></div>
+    <div id="header-placeholder" class="header"></div>
+    <main style="min-height: 80vh; display: flex; align-items: center; justify-content: center; margin-left: 220px;">
+        <div class="card" style="max-width: 600px; width: 100%; text-align: center; position: relative; animation: fadeInUp 0.6s cubic-bezier(.23,1.01,.32,1);">
+            <button onclick="window.history.back()" class="btn" style="position: absolute; left: 1.5rem; top: 1.5rem; padding: 0.5rem 1.2rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; background: var(--kenya-black);"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2 style="text-align:center; margin-bottom: 1.5rem; color: var(--kenya-black); font-size: 2rem; font-weight: 800;">Profile</h2>
+            <form id="profileForm">
+                <label for="fullName">Full Name</label>
+                <input type="text" id="fullName" name="fullName" required>
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required readonly>
+                <label for="phone">Phone</label>
+                <input type="text" id="phone" name="phone">
+                <label for="gender">Gender</label>
+                <select id="gender" name="gender">
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+                <label for="dob">Date of Birth</label>
+                <input type="date" id="dob" name="dob">
+                <label for="nationality">Nationality</label>
+                <input type="text" id="nationality" name="nationality">
+                <label for="identification">Identification</label>
+                <input type="text" id="identification" name="identification">
+                <label for="occupation">Occupation</label>
+                <input type="text" id="occupation" name="occupation">
+                <label for="county">County</label>
+                <input type="text" id="county" name="county">
+                <label for="department">Department</label>
+                <input type="text" id="department" name="department">
+                <label for="office">Office</label>
+                <input type="text" id="office" name="office">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password">
+                <button type="submit" class="btn" style="margin-top: 1rem; width: 100%;">Update Profile</button>
+            </form>
+        </div>
+    </main>
+    <div id="footer-placeholder" class="footer"></div>
+    <script src="../js/shared.js"></script>
+    <script src="../js/profile.js"></script>
+    <script>
+        requireLogin();
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPartial('../partials/citizen-sidebar.html', 'sidebar-placeholder');
+            loadPartial('../partials/header.html', 'header-placeholder');
+            loadPartial('../partials/footer.html', 'footer-placeholder');
+        });
+    </script>
+</body>
+</html>
+<style>
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>

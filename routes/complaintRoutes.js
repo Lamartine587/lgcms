@@ -1,268 +1,139 @@
 const express = require('express');
 const router = express.Router();
 const Complaint = require('../models/Complaint');
-const { protect, authorizeRoles } = require('../middleware/authMiddleware');
-const multer = require('multer');
-const path = require('path');
-const crypto = require('crypto');
-const fs = require('fs');
-const rateLimit = require('express-rate-limit');
+const { protect, authorizeAdmin } = require('../middleware/authMiddleware');
+const { body, validationResult } = require('express-validator');
 
-// Configure storage for file uploads
-const storage = multer.diskStorage({
-    destination: './uploads/',
-    filename: (req, file, cb) => {
-        cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+router.post('/', [
+    body('title').trim().notEmpty().withMessage('Title is required'),
+    body('description').trim().notEmpty().withMessage('Description is required'),
+], protect, async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
     }
-});
+    const { title, description, evidenceImages, evidenceVideos, evidencePdfs } = req.body; // Added evidence fields
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 10000000 },
-    fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png|gif|mp4|mov|pdf/;
-        const mimetype = filetypes.test(file.mimetype);
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb('Error: Images/Videos/PDFs only!');
-    }
-}).array('evidence', 5);
-
-// Rate limiting for anonymous complaints
-const anonymousLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 3, // limit each IP to 3 anonymous complaints per window
-    message: 'Too many anonymous submissions from this IP, please try again later'
-});
-
-// Generate unique public ID for complaints
-const generatePublicId = () => {
-    return 'COMP-' + crypto.randomBytes(4).toString('hex').toUpperCase();
-};
-
-// POST /api/complaints - Create new authenticated complaint
-router.post('/', protect, authorizeRoles('citizen'), (req, res) => {
-    upload(req, res, async (err) => {
-        if (err) {
-            return res.status(400).json({ message: err });
-        }
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ message: 'Please upload at least one evidence file.' });
-        }
-
-        const { category, description, location } = req.body;
-        const evidenceUrls = req.files.map(file => `/uploads/${file.filename}`);
-
-        try {
-            const complaint = await Complaint.create({
-                citizen: req.user._id,
-                category,
-                description,
-                location,
-                evidence: evidenceUrls,
-                publicId: generatePublicId(),
-                isAnonymous: false
-            });
-            res.status(201).json(complaint);
-        } catch (error) {
-            // Clean up uploaded files if complaint creation fails
-            req.files.forEach(file => {
-                fs.unlinkSync(file.path);
-            });
-            res.status(500).json({ message: error.message });
-        }
+    const complaint = new Complaint({
+        user: req.user._id,
+        title,
+        description,
+        evidenceImages: evidenceImages || [], // Save if provided
+        evidenceVideos: evidenceVideos || [],
+        evidencePdfs: evidencePdfs || [],
     });
-});
 
-// POST /api/complaints/anonymous - Create anonymous complaint
-router.post('/anonymous', anonymousLimiter, (req, res) => {
-    upload(req, res, async (err) => {
-        if (err) {
-            return res.status(400).json({ message: err });
-        }
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ message: 'Please upload at least one evidence file.' });
-        }
-
-        const { category, description, location, contactEmail } = req.body;
-        const evidenceUrls = req.files.map(file => `/uploads/${file.filename}`);
-
-        try {
-            const complaint = await Complaint.create({
-                category,
-                description,
-                location,
-                evidence: evidenceUrls,
-                contactEmail: contactEmail || null,
-                publicId: generatePublicId(),
-                isAnonymous: true
-            });
-            
-            res.status(201).json({
-                message: 'Anonymous complaint submitted successfully',
-                referenceId: complaint.publicId,
-                contactEmail: !!contactEmail
-            });
-        } catch (error) {
-            // Clean up uploaded files if complaint creation fails
-            req.files.forEach(file => {
-                fs.unlinkSync(file.path);
-            });
-            res.status(500).json({ message: error.message });
-        }
-    });
-});
-
-// GET /api/complaints/status/:publicId - Check complaint status (public)
-router.get('/status/:publicId', async (req, res) => {
     try {
-        const complaint = await Complaint.findOne({ 
-            publicId: req.params.publicId 
-        }).select('-citizen -assignedTo -feedback.user -__v');
-
-        if (!complaint) {
-            return res.status(404).json({ message: 'Complaint not found' });
-        }
-
-        // Return limited information for anonymous complaints
-        const response = {
-            status: complaint.status,
-            category: complaint.category,
-            createdAt: complaint.createdAt,
-            updatedAt: complaint.updatedAt,
-            resolutionDetails: complaint.isAnonymous ? null : complaint.resolutionDetails
-        };
-
-        res.json(response);
+        const createdComplaint = await complaint.save();
+        res.status(201).json(createdComplaint);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error creating complaint:', error);
+        res.status(400).json({ message: 'Failed to create complaint', error: error.message });
     }
 });
 
-// GET /api/complaints - Get all complaints (filtered by role)
 router.get('/', protect, async (req, res) => {
     try {
-        let complaints;
-        if (req.user.role === 'citizen') {
-            complaints = await Complaint.find({ citizen: req.user._id })
-                .populate('citizen', 'username email');
-        } else {
-            complaints = await Complaint.find({})
-                .populate('citizen', 'username email')
-                .populate('assignedTo', 'username email');
-        }
-        
-        // Format response to hide citizen info for anonymous complaints
-        const formattedComplaints = complaints.map(c => ({
-            ...c.toObject(),
-            citizen: c.isAnonymous ? 'Anonymous' : c.citizen
-        }));
-
-        res.json(formattedComplaints);
+        const complaints = await Complaint.find({ user: req.user._id });
+        res.json(complaints);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error fetching user complaints:', error);
+        res.status(500).json({ message: 'Server error fetching complaints', error: error.message });
     }
 });
 
-// GET /api/complaints/stats - Get statistics
-router.get('/stats', protect, authorizeRoles('sub-county_admin', 'county_director'), async (req, res) => {
+router.get('/all', protect, authorizeAdmin, async (req, res) => {
     try {
-        const totalComplaints = await Complaint.countDocuments();
-        const anonymousCount = await Complaint.countDocuments({ isAnonymous: true });
-        const submitted = await Complaint.countDocuments({ status: 'Submitted' });
-        const inReview = await Complaint.countDocuments({ status: 'In Review' });
-        const resolved = await Complaint.countDocuments({ status: 'Resolved' });
-        const rejected = await Complaint.countDocuments({ status: 'Rejected' });
+        // Populate user details, and include all new fields
+        const complaints = await Complaint.find({})
+            .populate('user', 'username fullName email')
+            .select('-password'); // Exclude password from user object
+        res.json(complaints);
+    } catch (error) {
+        console.error('Error fetching all complaints for admin:', error);
+        res.status(500).json({ message: 'Server error fetching all complaints', error: error.message });
+    }
+});
 
-        const mostCommonIssues = await Complaint.aggregate([
-            { $group: { _id: '$category', count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 5 }
-        ]);
+router.get('/statistics', protect, authorizeAdmin, async (req, res) => {
+    try {
+        // Ensure these status strings exactly match your Complaint model's enum values
+        const totalComplaints = await Complaint.countDocuments({});
+        const pendingComplaints = await Complaint.countDocuments({ status: 'Pending' });
+        const inProgressComplaints = await Complaint.countDocuments({ status: 'In Progress' });
+        const resolvedComplaints = await Complaint.countDocuments({ status: 'Resolved' });
+        const rejectedComplaints = await Complaint.countDocuments({ status: 'Rejected' });
 
         res.json({
-            totalComplaints,
-            anonymousCount,
-            statusBreakdown: { submitted, inReview, resolved, rejected },
-            mostCommonIssues
+            total: totalComplaints,
+            pending: pendingComplaints,
+            inProgress: inProgressComplaints,
+            resolved: resolvedComplaints,
+            rejected: rejectedComplaints,
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error fetching complaint statistics:', error);
+        res.status(500).json({ message: 'Server error fetching statistics', error: error.message });
     }
 });
 
-// GET /api/complaints/:id - Get specific complaint
 router.get('/:id', protect, async (req, res) => {
     try {
-        const complaint = await Complaint.findById(req.params.id)
-            .populate('citizen', 'username email')
-            .populate('assignedTo', 'username email')
-            .populate('feedback.user', 'username email');
-
-        if (!complaint) {
-            return res.status(404).json({ message: 'Complaint not found' });
+        const complaint = await Complaint.findById(req.params.id).populate('user', 'username fullName email'); // Populate user data
+        if (complaint && (complaint.user._id.toString() === req.user._id.toString() || req.user.role === 'admin')) {
+            res.json(complaint);
+        } else {
+            res.status(404).json({ message: 'Complaint not found or unauthorized' });
         }
-
-        // Hide citizen info for anonymous complaints unless admin
-        if (complaint.isAnonymous && req.user.role === 'citizen') {
-            return res.status(403).json({ message: 'Not authorized to view this complaint' });
-        }
-
-        const response = complaint.toObject();
-        if (complaint.isAnonymous) {
-            response.citizen = 'Anonymous';
-        }
-
-        res.json(response);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error fetching single complaint:', error);
+        res.status(500).json({ message: 'Server error fetching complaint', error: error.message });
     }
 });
 
-// PUT /api/complaints/:id/status - Update complaint status
-router.put('/:id/status', protect, authorizeRoles('sub-county_admin', 'county_director'), async (req, res) => {
-    const { status, assignedTo, resolutionDetails } = req.body;
+router.put('/:id', [
+    body('status').optional().isIn(['Pending', 'In Progress', 'Resolved', 'Rejected']).withMessage('Invalid status'),
+    body('adminFeedback').optional().isString(),
+], protect, authorizeAdmin, async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    const { status, adminFeedback } = req.body; // Added adminFeedback
     try {
         const complaint = await Complaint.findById(req.params.id);
 
-        if (!complaint) {
-            return res.status(404).json({ message: 'Complaint not found' });
+        if (complaint) {
+            complaint.status = status || complaint.status;
+            // Only update adminFeedback if it's explicitly provided in the request body
+            if (adminFeedback !== undefined) {
+                complaint.adminFeedback = adminFeedback;
+            }
+
+            const updatedComplaint = await complaint.save();
+            res.json(updatedComplaint);
+        } else {
+            res.status(404).json({ message: 'Complaint not found' });
         }
-
-        complaint.status = status || complaint.status;
-        complaint.assignedTo = assignedTo || complaint.assignedTo;
-        complaint.resolutionDetails = resolutionDetails || complaint.resolutionDetails;
-
-        const updatedComplaint = await complaint.save();
-        res.json(updatedComplaint);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error updating complaint:', error);
+        res.status(400).json({ message: 'Failed to update complaint', error: error.message });
     }
 });
 
-// POST /api/complaints/:id/feedback - Add feedback to complaint
-router.post('/:id/feedback', protect, async (req, res) => {
-    const { text } = req.body;
+router.delete('/:id', protect, authorizeAdmin, async (req, res) => {
     try {
         const complaint = await Complaint.findById(req.params.id);
 
-        if (!complaint) {
-            return res.status(404).json({ message: 'Complaint not found' });
+        if (complaint) {
+            await complaint.deleteOne();
+            res.json({ message: 'Complaint removed' });
+        } else {
+            res.status(404).json({ message: 'Complaint not found' });
         }
-
-        // For anonymous complaints, only allow admin feedback
-        if (complaint.isAnonymous && req.user.role === 'citizen') {
-            return res.status(403).json({ message: 'Not authorized to provide feedback on anonymous complaints' });
-        }
-
-        complaint.feedback.push({ user: req.user._id, text });
-        const updatedComplaint = await complaint.save();
-        res.status(201).json(updatedComplaint);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error deleting complaint:', error);
+        res.status(500).json({ message: 'Server error deleting complaint', error: error.message });
     }
 });
 

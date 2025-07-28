@@ -3,550 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LGCMS - Admin Dashboard</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font (similar to Roboto for a modern feel) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Font Awesome for Icons (Hamburger, Close, and Navigation Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
-            font-family: 'Inter', sans-serif; /* Using Inter as per previous instructions, similar modern feel to Roboto */
-            background-color: #f3f4f6; /* Light gray background */
-        }
-        /* Custom scrollbar for better aesthetics */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #e0e0e0;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #9ca3af;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280;
-        }
-
-        /* Custom styles inferred from your structure, using Tailwind where possible */
-        .stat-cards {
-            @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4;
-        }
-        .stat-card {
-            @apply bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center transform transition duration-300 hover:scale-[1.02];
-        }
-        .stat-card h3 {
-            @apply text-gray-500 text-sm mb-2;
-        }
-        .stat-card .stat-value {
-            @apply text-3xl font-bold;
-        }
-        .stat-card.total .stat-value { @apply text-blue-700; }
-        .stat-card.submitted .stat-value { @apply text-gray-700; }
-        .stat-card.in-review .stat-value { @apply text-yellow-700; }
-        .stat-card.resolved .stat-value { @apply text-green-700; }
-        .stat-card.rejected .stat-value { @apply text-red-700; }
-
-        .section-header {
-            @apply bg-white p-6 rounded-lg shadow-md mb-6 flex justify-between items-center;
-        }
-        .section-header h2 {
-            @apply text-3xl font-extrabold text-gray-900 flex items-center space-x-3;
-        }
-        .section-header p {
-            @apply text-gray-600 text-lg;
-        }
-        .common-issues {
-            @apply bg-white p-6 rounded-lg shadow-md;
-        }
-        .common-issues h3 {
-            @apply text-xl font-semibold text-gray-800 mb-4 flex items-center space-x-2;
-        }
-        .common-issues ul {
-            @apply list-none p-0 space-y-2;
-        }
-        .common-issues li {
-            @apply bg-blue-50 p-3 rounded-md text-gray-700 flex justify-between items-center;
-        }
-        .complaints-list-header {
-            @apply bg-white p-6 rounded-lg shadow-md mb-6 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 md:space-x-4;
-        }
-        .complaints-list-header h3 {
-            @apply text-xl font-semibold text-gray-800 flex items-center space-x-2;
-        }
-        .search-filter {
-            @apply flex space-x-2 w-full md:w-auto;
-        }
-        .search-filter input, .search-filter select {
-            @apply block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm;
-        }
-        .complaints-list {
-            @apply bg-white p-6 rounded-lg shadow-md overflow-x-auto;
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* A softer, modern background */
         }
         .complaint-card {
-            @apply bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200 mb-3;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease-in-out;
+            transform: translateY(0);
         }
-        .complaint-card h3 {
-            @apply text-lg font-semibold text-gray-800 flex justify-between items-center mb-2;
+        .complaint-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-        .complaint-card p {
-            @apply text-gray-600 text-sm mb-1;
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            line-height: 1;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
-        .complaint-card .status-badge {
-            @apply px-2 py-1 text-xs font-medium rounded-full text-white;
-        }
-        .complaint-card .status-badge[data-status="Submitted"] { @apply bg-gray-400; }
-        .complaint-card .status-badge[data-status="In Review"] { @apply bg-yellow-500; }
-        .complaint-card .status-badge[data-status="Resolved"] { @apply bg-green-600; }
-        .complaint-card .status-badge[data-status="Rejected"] { @apply bg-red-600; }
-        .complaint-card .status-badge[data-status="Closed"] { @apply bg-blue-600; }
+        .status-Pending { background-color: #fcd34d; color: #92400e; }
+        .status-InProgress { background-color: #93c5fd; color: #1e40af; }
+        .status-Resolved { background-color: #a7f3d0; color: #065f46; }
+        .status-Rejected { background-color: #fca5a5; color: #7f1d1d; }
 
-        .complaint-card .view-detail-btn {
-            @apply inline-flex items-center mt-2 px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+        /* Custom styles for sidebar */
+        .sidebar {
+            width: 250px;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+            z-index: 50; /* Above main content */
+            background: linear-gradient(180deg, #1f2937 0%, #111827 100%); /* Darker gradient */
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3); /* Stronger shadow to the right */
         }
-        .complaint-card .view-detail-btn i {
-            @apply mr-2;
+        .sidebar.open {
+            transform: translateX(0);
         }
-
-        .loading-spinner, .error-message, .no-complaints {
-            @apply p-4 text-center rounded-md;
+        .overlay {
+            background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
+            z-index: 40; /* Below sidebar, above main content */
+            transition: opacity 0.3s ease-in-out;
         }
-        .loading-spinner {
-            @apply bg-blue-100 text-blue-700;
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
-        .error-message {
-            @apply bg-red-100 text-red-700;
+        /* Adjust main content for sidebar on larger screens */
+        @media (min-width: 1024px) { /* lg breakpoint */
+            .sidebar {
+                transform: translateX(0); /* Always open on large screens */
+                position: static; /* Not fixed, part of flex layout */
+            }
+            .overlay {
+                display: none; /* No overlay on large screens */
+            }
         }
-        .no-complaints {
-            @apply text-gray-500;
+        /* Style for navigation links within the sidebar */
+        #sidebar-navigation-placeholder a {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem; /* rounded-lg */
+            color: #e5e7eb; /* gray-200 */
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        }
+        #sidebar-navigation-placeholder a:hover {
+            background-color: #374151; /* gray-700 */
+            color: #ffffff; /* white */
+        }
+        #sidebar-navigation-placeholder a i {
+            margin-right: 0.75rem; /* space-x-3 */
+            font-size: 1.25rem; /* text-xl */
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
-    <!-- Header -->
-    <header class="bg-blue-700 text-white p-4 shadow-md">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">LGCMS</h1>
-            <nav class="space-x-4 flex items-center">
-                <span class="font-medium text-blue-200">Admin Dashboard</span>
-                <div class="flex items-center space-x-2">
-                    <img class="h-9 w-9 rounded-full object-cover" src="https://placehold.co/100x100/A0B2C3/FFFFFF?text=AD" alt="Admin User Avatar">
-                    <span class="font-medium text-white hidden sm:block">Admin User</span>
+    <div id="header-placeholder"></div>
+
+    <div class="flex flex-grow"> <!-- This div wraps the sidebar and the main content area -->
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 text-white p-4 lg:relative">
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center">
+                    <i class="fas fa-chart-line text-blue-400 text-3xl mr-3"></i>
+                    <span class="text-3xl font-extrabold text-blue-300">LGCMS</span>
                 </div>
-                <button class="p-2 rounded-full hover:bg-blue-600 transition duration-200">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                <button id="closeSidebarBtn" class="text-white text-3xl focus:outline-none lg:hidden hover:text-blue-200 transition">
+                    <i class="fas fa-times"></i>
                 </button>
-            </nav>
-        </div>
-    </header>
-
-    <main class="container mx-auto p-4 md:p-8 flex-grow">
-        <div class="section-header">
-            <h2><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
-            <p>Manage and track all citizen complaints</p>
-        </div>
-
-        <div class="dashboard-stats grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div class="stat-cards">
-                <div class="stat-card total">
-                    <h3>Total Complaints</h3>
-                    <div class="stat-value" id="stat-total">0</div>
-                </div>
-                <div class="stat-card submitted">
-                    <h3>Submitted</h3>
-                    <div class="stat-value" id="stat-submitted">0</div>
-                </div>
-                <div class="stat-card in-review">
-                    <h3>In Review</h3>
-                    <div class="stat-value" id="stat-in-review">0</div>
-                </div>
-                <div class="stat-card resolved">
-                    <h3>Resolved</h3>
-                    <div class="stat-value" id="stat-resolved">0</div>
-                </div>
-                <div class="stat-card rejected">
-                    <h3>Rejected</h3>
-                    <div class="stat-value" id="stat-rejected">0</div>
-                </div>
             </div>
+            <div id="sidebar-navigation-placeholder"></div>
+        </aside>
 
-            <div class="common-issues">
-                <h3><i class="fas fa-chart-pie"></i> Most Common Issues (by Department)</h3>
-                <ul id="stat-common-issues">
-                    <!-- Common issues will be loaded here -->
-                    <li>Loading common issues...</li>
-                </ul>
-            </div>
+        <!-- Overlay for mobile/tablet -->
+        <div id="overlay" class="overlay fixed inset-0 hidden lg:hidden"></div>
+
+        <!-- Main Content Area -->
+        <div class="flex-grow flex flex-col">
+            <main class="flex-grow container mx-auto py-4 px-6">
+                <h1 class="text-4xl font-extrabold text-gray-900 mb-8 text-center">
+                    Admin Dashboard
+                </h1>
+
+                <!-- Complaint Statistics Cards -->
+                <section class="mb-10">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Complaint Statistics</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                        <!-- Total Complaints Card -->
+                        <div class="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                            <div class="text-5xl font-bold text-blue-600" id="totalComplaintsCount">0</div>
+                            <p class="text-gray-600 mt-2">Total Complaints</p>
+                        </div>
+
+                        <!-- Pending Complaints Card -->
+                        <div class="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                            <div class="text-5xl font-bold text-yellow-600" id="pendingComplaintsCount">0</div>
+                            <p class="text-gray-600 mt-2">Pending</p>
+                        </div>
+
+                        <!-- In Progress Complaints Card -->
+                        <div class="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                            <div class="text-5xl font-bold text-indigo-600" id="inProgressComplaintsCount">0</div>
+                            <p class="text-gray-600 mt-2">In Progress</p>
+                        </div>
+
+                        <!-- Resolved Complaints Card -->
+                        <div class="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                            <div class="text-5xl font-bold text-green-600" id="resolvedComplaintsCount">0</div>
+                            <p class="text-gray-600 mt-2">Resolved</p>
+                        </div>
+
+                        <!-- Rejected Complaints Card -->
+                        <div class="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                            <div class="text-5xl font-bold text-red-600" id="rejectedComplaintsCount">0</div>
+                            <p class="text-gray-600 mt-2">Rejected</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Departmental Complaints (Graphs) - Placeholder -->
+                <section class="mb-10">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Departmental Complaints (Graphs)</h2>
+                    <div class="bg-white p-6 rounded-lg shadow-md min-h-[300px] flex items-center justify-center text-gray-500">
+                        <p>Graph visualization of complaints by department will go here.</p>
+                        <p> (Requires a charting library like Chart.js or D3.js, and backend aggregation of data.)</p>
+                    </div>
+                </section>
+
+                <!-- Complaint Status Distribution (Pie Chart) - Placeholder -->
+                <section class="mb-10">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Complaint Status Distribution (Pie Chart)</h2>
+                    <div class="bg-white p-6 rounded-lg shadow-md min-h-[300px] flex items-center justify-center text-gray-500">
+                        <p>Pie chart showing the distribution of complaint statuses will go here.</p>
+                        <p> (Requires a charting library like Chart.js or D3.js, and backend aggregation of data.)</p>
+                    </div>
+                </section>
+
+
+                <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">
+                    All Complaints
+                </h2>
+
+                <div id="adminComplaintsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Admin complaints will be loaded here by JavaScript -->
+                </div>
+
+                <p id="noAdminComplaintsMessage" class="text-center text-gray-600 text-lg mt-10 hidden">
+                    No complaints found in the system.
+                </p>
+            </main>
+
+            <div id="footer-placeholder"></div>
         </div>
+    </div>
 
-        <div class="complaints-list-header">
-            <h3><i class="fas fa-list-ul"></i> All Complaints</h3>
-            <div class="search-filter">
-                <input type="text" id="admin-search" placeholder="Search complaints..." class="w-full md:w-auto">
-                <select id="admin-filter" class="w-full md:w-auto">
-                    <option value="all">All Statuses</option>
-                    <option value="Submitted">Submitted</option>
-                    <option value="In Review">In Review</option>
-                    <option value="Resolved">Resolved</option>
-                    <option value="Rejected">Rejected</option>
-                    <option value="Closed">Closed</option>
-                </select>
-            </div>
-        </div>
+    <script src="../js/shared.js"></script> <!-- Corrected path -->
+    <script src="../js/admin.js"></script> <!-- Corrected path -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPartial('../partials/header.html', 'header-placeholder');
+            loadPartial('../partials/navigation.html', 'sidebar-navigation-placeholder');
+            loadPartial('../partials/footer.html', 'footer-placeholder');
+            fetchAllComplaintsForAdmin();
 
-        <div id="admin-complaints-list" class="complaints-list">
-            <div class="loading-spinner" id="complaints-loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i> Loading complaints...
-            </div>
-            <div id="admin-dashboard-error" class="error-message hidden"></div>
-            <!-- Complaints will be rendered here directly as cards -->
-        </div>
-    </main>
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const openSidebarBtn = document.getElementById('openSidebarBtn');
+            const closeSidebarBtn = document.getElementById('closeSidebarBtn');
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white p-4 text-center mt-auto">
-        <div class="container mx-auto">
-            <p>&copy; 2024 LGCMS. All rights reserved.</p>
-        </div>
-    </footer>
+            function openSidebar() {
+                sidebar.classList.add('open');
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
 
-    <script type="module">
-        // Firebase SDK imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+            function closeSidebar() {
+                sidebar.classList.remove('open');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
 
-        // --- Firebase Initialization and Authentication ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+            if (openSidebarBtn) {
+                openSidebarBtn.addEventListener('click', openSidebar);
+            }
+            if (closeSidebarBtn) {
+                closeSidebarBtn.addEventListener('click', closeSidebar);
+            }
+            if (overlay) {
+                overlay.addEventListener('click', closeSidebar);
+            }
 
-        let app;
-        let db;
-        let auth;
-        let userId = null;
-        let isAuthReady = false;
-
-        // Initialize Firebase and set up auth listener
-        try {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    console.log("Authenticated with Firebase UID:", userId);
-                } else {
-                    // Sign in anonymously if no token is provided
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                            userId = auth.currentUser.uid;
-                            console.log("Signed in with custom token:", userId);
-                        } catch (error) {
-                            console.error("Error signing in with custom token:", error);
-                            // Fallback to anonymous if custom token fails
-                            await signInAnonymously(auth);
-                            userId = auth.currentUser.uid;
-                            console.log("Signed in anonymously after custom token failure:", userId);
-                        }
-                    } else {
-                        await signInAnonymously(auth);
-                        userId = auth.currentUser.uid;
-                        console.log("Signed in anonymously:", userId);
+            document.querySelectorAll('#sidebar-navigation-placeholder a').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 1024) {
+                        closeSidebar();
                     }
-                }
-                isAuthReady = true;
-                // Once authenticated, load dashboard data
-                loadAdminDashboard();
-            });
-        } catch (e) {
-            console.error("Firebase initialization error:", e);
-            document.getElementById('admin-dashboard-error').textContent = 'Firebase initialization failed. Check console for details.';
-            document.getElementById('admin-dashboard-error').classList.remove('hidden');
-        }
-
-        // --- Simulated Backend Data (for initial population if DB is empty) ---
-        // This data will only be used if the Firestore collections are found to be empty.
-        const initialDummyComplaints = [
-            {
-                _id: "LGCMS-001", category: "Water & Sanitation", location: "Kileleshwa, Nairobi",
-                title: "No water supply for 3 days", description: "Water cut off without notice.",
-                citizen: { username: "Jane Doe" }, status: "In Review", createdAt: new Date("2024-07-20T10:30:00Z").toISOString(),
-                lastUpdated: new Date("2024-07-22T14:15:00Z").toISOString()
-            },
-            {
-                _id: "LGCMS-002", category: "Roads & Infrastructure", location: "Mombasa Road",
-                title: "Large Pothole on Main Road", description: "Dangerous pothole near airport.",
-                citizen: { username: "Anonymous" }, status: "Submitted", createdAt: new Date("2024-07-23T09:00:00Z").toISOString(),
-                lastUpdated: new Date("2024-07-23T09:00:00Z").toISOString()
-            },
-            {
-                _id: "LGCMS-003", category: "Environment", location: "City Park",
-                title: "Illegal dumping of waste", description: "Construction waste near park entrance.",
-                citizen: { username: "John Smith" }, status: "Resolved", createdAt: new Date("2024-07-15T13:00:00Z").toISOString(),
-                lastUpdated: new Date("2024-07-18T11:00:00Z").toISOString()
-            },
-            {
-                _id: "LGCMS-004", category: "Health Services", location: "Kangemi Clinic",
-                title: "Clinic staff misconduct", description: "Rude staff at the clinic.",
-                citizen: { username: "Mary Wanjiku" }, status: "In Review", createdAt: new Date("2024-07-23T14:00:00Z").toISOString(),
-                lastUpdated: new Date("2024-07-23T14:00:00Z").toISOString()
-            }
-        ];
-
-        // --- Core Dashboard Functions (adapted for Firestore) ---
-
-        let currentComplaintsData = []; // To store filtered complaints for search/filter
-
-        /**
-         * Loads all necessary data for the admin dashboard from Firestore.
-         */
-        async function loadAdminDashboard() {
-            if (!isAuthReady) {
-                console.log("Authentication not ready, retrying loadAdminDashboard...");
-                setTimeout(loadAdminDashboard, 500); // Retry after a short delay
-                return;
-            }
-
-            const complaintsListContainer = document.getElementById('admin-complaints-list');
-            const errorElement = document.getElementById('admin-dashboard-error');
-
-            // Show loading state
-            complaintsListContainer.innerHTML = `
-                <div class="loading-spinner" id="complaints-loading-spinner">
-                    <i class="fas fa-spinner fa-spin"></i> Loading dashboard data...
-                </div>
-            `;
-            errorElement.textContent = '';
-            errorElement.classList.add('hidden');
-
-            try {
-                // Determine the base path for collections based on userId and appId
-                const basePath = `/artifacts/${appId}/public/data`; // Assuming complaints are public for dashboard view
-
-                // Check if complaints collection is empty and populate if needed
-                const complaintsCollectionRef = collection(db, `${basePath}/complaints`);
-                const complaintsSnapshot = await getDocs(complaintsCollectionRef);
-
-                if (complaintsSnapshot.empty) {
-                    console.log("Complaints collection is empty, populating with dummy data...");
-                    for (const complaint of initialDummyComplaints) {
-                        // Use setDoc to use the custom _id as document ID
-                        await setDoc(doc(complaintsCollectionRef, complaint._id), complaint);
-                    }
-                    console.log("Dummy data populated.");
-                }
-
-                // Use onSnapshot for real-time updates for complaints list
-                onSnapshot(complaintsCollectionRef, (snapshot) => {
-                    const allComplaints = snapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
-                    currentComplaintsData = allComplaints; // Update global data
-                    filterAdminComplaints(); // Re-render with current filters
-                    updateDashboardStats(allComplaints); // Update stats based on all fetched complaints
-                }, (error) => {
-                    console.error("Error listening to complaints:", error);
-                    displayMessage(errorElement, 'Failed to get real-time complaint updates.', true);
-                });
-
-            } catch (error) {
-                console.error('Failed to load admin dashboard data:', error);
-                complaintsListContainer.innerHTML = ''; // Clear loading spinner
-                displayMessage(errorElement, error.message || 'Failed to load dashboard data. Please try again later.', true);
-            }
-        }
-
-        /**
-         * Updates the statistics cards and common issues list based on the complaints data.
-         * @param {Array} allComplaints - The array of all complaints fetched from Firestore.
-         */
-        function updateDashboardStats(allComplaints) {
-            const stats = {
-                totalComplaints: allComplaints.length,
-                statusBreakdown: {
-                    submitted: 0,
-                    inReview: 0,
-                    resolved: 0,
-                    rejected: 0,
-                    closed: 0
-                },
-                mostCommonIssues: {} // Using department as issue category for this demo
-            };
-
-            allComplaints.forEach(complaint => {
-                // Count status breakdown
-                if (complaint.status) {
-                    const statusKey = complaint.status.toLowerCase().replace(/\s/g, '');
-                    if (stats.statusBreakdown[statusKey] !== undefined) {
-                        stats.statusBreakdown[statusKey]++;
-                    } else if (complaint.status === 'Assigned') { // Handle 'Assigned' as 'In Review' for stats
-                         stats.statusBreakdown.inreview++;
-                    }
-                }
-
-                // Count common issues by department
-                if (complaint.department) {
-                    stats.mostCommonIssues[complaint.department] = (stats.mostCommonIssues[complaint.department] || 0) + 1;
-                } else if (complaint.category) { // Fallback to category if department is missing
-                    stats.mostCommonIssues[complaint.category] = (stats.mostCommonIssues[complaint.category] || 0) + 1;
-                }
-            });
-
-            // Update the statistics cards
-            document.getElementById('stat-total').textContent = stats.totalComplaints;
-            document.getElementById('stat-submitted').textContent = stats.statusBreakdown.submitted;
-            document.getElementById('stat-in-review').textContent = stats.statusBreakdown.inreview;
-            document.getElementById('stat-resolved').textContent = stats.statusBreakdown.resolved;
-            document.getElementById('stat-rejected').textContent = stats.statusBreakdown.rejected + stats.statusBreakdown.closed; // Combine rejected and closed
-
-            // Update most common issues list
-            const commonIssuesList = document.getElementById('stat-common-issues');
-            commonIssuesList.innerHTML = '';
-
-            const sortedCommonIssues = Object.entries(stats.mostCommonIssues)
-                .map(([name, count]) => ({ _id: name, count })) // Format to match expected structure
-                .sort((a, b) => b.count - a.count);
-
-            if (sortedCommonIssues.length > 0) {
-                sortedCommonIssues.slice(0, 5).forEach(issue => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `
-                        <span class="issue-category">${issue._id || 'Unknown'}:</span>
-                        <span class="issue-count">${issue.count || 0}</span>
-                    `;
-                    commonIssuesList.appendChild(li);
-                });
-            } else {
-                commonIssuesList.innerHTML = '<li>No common issues data available</li>';
-            }
-        }
-
-        /**
-         * Renders the complaints list as cards.
-         * @param {Array} complaints - The array of complaints to render.
-         */
-        function renderComplaintsList(complaints) {
-            const complaintsListContainer = document.getElementById('admin-complaints-list');
-            const loadingSpinner = document.getElementById('complaints-loading-spinner');
-            const noComplaintsFound = document.getElementById('noComplaintsFound');
-
-            loadingSpinner.classList.add('hidden'); // Hide spinner once data is ready
-            complaintsListContainer.innerHTML = ''; // Clear previous content
-
-            if (complaints.length === 0) {
-                const p = document.createElement('p');
-                p.className = 'no-complaints';
-                p.textContent = 'No complaints found matching your criteria.';
-                complaintsListContainer.appendChild(p);
-                return;
-            }
-
-            complaints.forEach(complaint => {
-                const complaintCard = document.createElement('div');
-                complaintCard.className = 'complaint-card';
-                complaintCard.dataset.id = complaint._id;
-                complaintCard.dataset.status = complaint.status;
-
-                // Determine department or category to display
-                const departmentOrCategory = complaint.department || complaint.category || 'Not specified';
-
-                complaintCard.innerHTML = `
-                    <h3>
-                        ${complaint.title || 'No Title'}
-                        <span class="status-badge" data-status="${complaint.status}">
-                            ${complaint.status || 'Unknown'}
-                        </span>
-                    </h3>
-                    <p><strong>Category:</strong> ${complaint.category || 'N/A'}</p>
-                    <p><strong>Location:</strong> ${complaint.location || 'Not specified'}</p>
-                    <p><strong>Department:</strong> ${departmentOrCategory}</p>
-                    <p><strong>Submitted By:</strong> ${complaint.citizen?.username || 'Anonymous'}</p>
-                    <p><strong>Submitted On:</strong> ${complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : 'Unknown date'}</p>
-                    <a href="#" class="view-detail-btn" data-id="${complaint._id}">
-                        <i class="fas fa-eye"></i> View Details (Not Implemented in this demo)
-                    </a>
-                `;
-                complaintsListContainer.appendChild(complaintCard);
-            });
-
-            // Add event listeners for "View Details" buttons (if they were to be implemented)
-            document.querySelectorAll('.view-detail-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    // In a full application, this would open a modal or navigate to a detail page
-                    console.log("View Details clicked for complaint ID:", e.currentTarget.dataset.id);
-                    displayMessage(document.getElementById('admin-dashboard-error'), 'View Details functionality not implemented in this demo.', false);
                 });
             });
-        }
 
-        /**
-         * Filters the displayed complaints based on search term and status.
-         */
-        function filterAdminComplaints() {
-            const searchTerm = document.getElementById('admin-search').value.toLowerCase();
-            const filterValue = document.getElementById('admin-filter').value;
-            const complaintsListContainer = document.getElementById('admin-complaints-list');
-            const noComplaintsFound = document.getElementById('noComplaintsFound');
-
-            let filteredComplaints = currentComplaintsData;
-
-            // Apply status filter
-            if (filterValue !== 'all') {
-                filteredComplaints = filteredComplaints.filter(complaint => complaint.status === filterValue);
-            }
-
-            // Apply search term filter
-            if (searchTerm) {
-                filteredComplaints = filteredComplaints.filter(complaint =>
-                    (complaint._id && complaint._id.toLowerCase().includes(searchTerm)) ||
-                    (complaint.title && complaint.title.toLowerCase().includes(searchTerm)) ||
-                    (complaint.category && complaint.category.toLowerCase().includes(searchTerm)) ||
-                    (complaint.location && complaint.location.toLowerCase().includes(searchTerm)) ||
-                    (complaint.department && complaint.department.toLowerCase().includes(searchTerm))
-                );
-            }
-
-            renderComplaintsList(filteredComplaints);
-
-            if (filteredComplaints.length === 0) {
-                noComplaintsFound.classList.remove('hidden');
-            } else {
-                noComplaintsFound.classList.add('hidden');
-            }
-        }
-
-        /**
-         * Displays a message to the user (success, error, or info).
-         * @param {HTMLElement} element - The DOM element to display the message in.
-         * @param {string} message - The message text.
-         * @param {boolean} isError - True if it's an error message, false otherwise.
-         */
-        function displayMessage(element, message, isError = false) {
-            if (!element) return;
-
-            element.textContent = message;
-            element.classList.remove('hidden', 'bg-red-100', 'bg-green-100', 'text-red-700', 'text-green-700');
-            if (isError) {
-                element.classList.add('bg-red-100', 'text-red-700');
-            } else {
-                element.classList.add('bg-green-100', 'text-green-700');
-            }
-
-            setTimeout(() => {
-                element.classList.add('hidden');
-            }, 5000);
-        }
-
-        // --- Event Listeners ---
-        document.getElementById('admin-search').addEventListener('input', filterAdminComplaints);
-        document.getElementById('admin-filter').addEventListener('change', filterAdminComplaints);
-
-        // No need for window.onload here, as loadAdminDashboard is called after Firebase auth is ready.
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 1024) {
+                    sidebar.classList.remove('open');
+                    overlay.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }
+            });
+        });
     </script>
 </body>
 </html>

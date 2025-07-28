@@ -1,75 +1,93 @@
+const API_URL = 'http://localhost:5000/api';
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Login Form
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const errorElement = document.getElementById('login-error');
-            
+            const fullName = document.getElementById('fullName').value;
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
+            }
+
             try {
-                const data = await apiCall('/users/login', 'POST', { email, password });
-                
-                localStorage.setItem(TOKEN_KEY, data.token);
-                localStorage.setItem(USER_ROLE_KEY, data.role);
-                localStorage.setItem(USER_NAME_KEY, data.username);
-                
-                updateNavVisibility();
-                
-                // Redirect based on role
-                const redirectUrl = data.role === 'citizen' ? '/my-complaints.html' : '/admin-dashboard.html';
-                window.location.href = redirectUrl;
-                
+                const res = await fetch(`${API_URL}/users/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ fullName, username, email, password }),
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('userInfo', JSON.stringify(data));
+                    // Redirect based on role
+                    if (data.role === 'admin') {
+                        window.location.href = '../admin/admin-dashboard.html';
+                    } else {
+                        window.location.href = 'dashboard.html';
+                    }
+                } else {
+                    alert(data.message || 'Registration failed');
+                }
             } catch (error) {
-                displayMessage(errorElement, error.message, true);
+                console.error('Error during registration:', error);
+                alert('An error occurred during registration. Please try again.');
             }
         });
     }
 
-    // Register Form
-    const registerForm = document.getElementById('register-form');
-    if (registerForm) {
-        registerForm.addEventListener('submit', async (e) => {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const formData = {
-                username: document.getElementById('register-username').value,
-                email: document.getElementById('register-email').value,
-                password: document.getElementById('register-password').value,
-                confirmPassword: document.getElementById('register-confirm-password').value,
-                role: document.getElementById('register-role').value
-            };
-            
-            const errorElement = document.getElementById('register-error');
-            
-            if (formData.password !== formData.confirmPassword) {
-                displayMessage(errorElement, 'Passwords do not match', true);
-                return;
-            }
-            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
             try {
-                const data = await apiCall('/users/register', 'POST', {
-                    username: formData.username,
-                    email: formData.email,
-                    password: formData.password,
-                    role: formData.role
+                const res = await fetch(`${API_URL}/users/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password }),
                 });
-                
-                localStorage.setItem(TOKEN_KEY, data.token);
-                localStorage.setItem(USER_ROLE_KEY, data.role);
-                localStorage.setItem(USER_NAME_KEY, data.username);
-                
-                updateNavVisibility();
-                
-                // Redirect based on role
-                const redirectUrl = data.role === 'citizen' ? '/my-complaints.html' : '/admin-dashboard.html';
-                window.location.href = redirectUrl;
-                
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('userInfo', JSON.stringify(data));
+                    // Redirect based on role
+                    if (data.role === 'admin') {
+                        window.location.href = '../admin/admin-dashboard.html';
+                    } else {
+                        window.location.href = 'dashboard.html';
+                    }
+                } else {
+                    alert(data.message || 'Invalid email or password');
+                }
             } catch (error) {
-                displayMessage(errorElement, error.message, true);
+                console.error('Error during login:', error);
+                alert('An error occurred during login. Please try again.');
             }
+        });
+    }
+
+    // This logout button is for login.html/register.html if they have one.
+    // The main logout is now handled by the sidebar's navLogout.
+    const logoutButton = document.getElementById('logoutButton');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('userInfo');
+            window.location.href = 'login.html'; // Path relative to current admin folder
         });
     }
 });

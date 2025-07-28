@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citizen Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="sidebar-placeholder"></div>
+    <div id="header-placeholder" class="header"></div>
+    <main style="min-height: 80vh; display: flex; align-items: center; justify-content: center; margin-left: 220px;">
+        <div class="card" style="max-width: 600px; width: 100%; text-align: center; position: relative; animation: fadeInUp 0.6s cubic-bezier(.23,1.01,.32,1);">
+            <h1 style="font-size: 2.2rem; font-weight: 900; color: var(--kenya-black); margin-bottom: 1.5rem;">
+                <i class="fas fa-user-circle" style="color: var(--kenya-green);"></i> Welcome to Your Dashboard
+            </h1>
+            <p style="font-size: 1.1rem; color: #333; margin-bottom: 2rem;">Access all your services and manage your complaints easily.</p>
+            <div style="display: flex; flex-direction: column; gap: 1.5rem; align-items: center;">
+                <a href="submit-complaint.html" class="btn" style="width: 80%; max-width: 350px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem;"><i class="fas fa-plus-circle"></i> Submit a Complaint</a>
+                <a href="my-complaints.html" class="btn" style="width: 80%; max-width: 350px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem; background: var(--kenya-black);"><i class="fas fa-list-alt"></i> My Complaints</a>
+                <a href="profile.html" class="btn" style="width: 80%; max-width: 350px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem; background: var(--kenya-green);"><i class="fas fa-user"></i> Profile</a>
+            </div>
+        </div>
+    </main>
+    <div id="footer-placeholder" class="footer"></div>
+    <script src="../js/shared.js"></script>
+    <script>
+        requireLogin();
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPartial('../partials/citizen-sidebar.html', 'sidebar-placeholder');
+            loadPartial('../partials/header.html', 'header-placeholder');
+            loadPartial('../partials/footer.html', 'footer-placeholder');
+        });
+    </script>
+</body>
+</html>
+<style>
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style> 

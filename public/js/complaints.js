@@ -1,287 +1,249 @@
-// Handle file upload preview for both regular and anonymous complaints
-function handleFileUpload(inputElement, previewElement) {
-    previewElement.innerHTML = '';
-    const files = inputElement.files;
-    
-    if (files.length === 0) return;
-    
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fileType = file.type.split('/')[0];
-        const previewItem = document.createElement('div');
-        previewItem.className = 'file-preview-item';
-        
-        if (fileType === 'image') {
-            const img = document.createElement('img');
-            img.src = URL.createObjectURL(file);
-            previewItem.appendChild(img);
-        } else if (file.type.includes('pdf')) {
-            previewItem.innerHTML = `
-                <div class="file-icon">
-                    <i class="fas fa-file-pdf"></i>
-                    <span>${file.name}</span>
-                </div>
-            `;
-        } else if (fileType === 'video') {
-            const video = document.createElement('video');
-            video.src = URL.createObjectURL(file);
-            video.controls = true;
-            previewItem.appendChild(video);
-        } else {
-            previewItem.innerHTML = `
-                <div class="file-icon">
-                    <i class="fas fa-file"></i>
-                    <span>${file.name}</span>
-                </div>
-            `;
-        }
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-btn';
-        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-        removeBtn.addEventListener('click', () => removeFile(inputElement, previewElement, i));
-        
-        previewItem.appendChild(removeBtn);
-        previewElement.appendChild(previewItem);
-    }
-}
+const API_URL = 'http://localhost:5000/api';
 
-function removeFile(inputElement, previewElement, index) {
-    const dt = new DataTransfer();
-    const files = inputElement.files;
-    
-    for (let i = 0; i < files.length; i++) {
-        if (i !== index) dt.items.add(files[i]);
-    }
-    
-    inputElement.files = dt.files;
-    handleFileUpload(inputElement, previewElement);
-}
-
-// Initialize complaint form functionality
-document.addEventListener('DOMContentLoaded', function() {
-    // Regular complaint form elements
-    const complaintEvidence = document.getElementById('complaint-evidence');
-    const filePreview = document.getElementById('file-preview');
-    const complaintForm = document.getElementById('complaint-form');
-
-    // Anonymous complaint form elements
-    const anonymousEvidence = document.getElementById('anonymous-evidence');
-    const anonymousFilePreview = document.getElementById('anonymous-file-preview');
-    const anonymousForm = document.getElementById('anonymous-complaint-form');
-    const showAnonymousBtn = document.getElementById('show-anonymous-btn');
-
-    // Initialize file upload handlers if elements exist
-    if (complaintEvidence && filePreview) {
-        complaintEvidence.addEventListener('change', function() {
-            handleFileUpload(complaintEvidence, filePreview);
-        });
-    }
-
-    if (anonymousEvidence && anonymousFilePreview) {
-        anonymousEvidence.addEventListener('change', function() {
-            handleFileUpload(anonymousEvidence, anonymousFilePreview);
-        });
-    }
-
-    // Toggle anonymous form visibility
-    if (showAnonymousBtn) {
-        showAnonymousBtn.addEventListener('click', function(e) {
+document.addEventListener('DOMContentLoaded', () => {
+    const submitComplaintForm = document.getElementById('submitComplaintForm');
+    if (submitComplaintForm) {
+        submitComplaintForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            anonymousForm.style.display = anonymousForm.style.display === 'none' ? 'block' : 'none';
-            this.innerHTML = anonymousForm.style.display === 'none' ? 
-                '<i class="fas fa-user-secret"></i> Submit Anonymously' : 
-                '<i class="fas fa-times"></i> Cancel';
-        });
-    }
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
-    // Handle regular complaint submission
-    if (complaintForm) {
-        complaintForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData();
-            const complaintMessage = document.getElementById('complaint-message');
-            const complaintError = document.getElementById('complaint-error');
-            
-            formData.append('category', document.getElementById('complaint-category').value);
-            formData.append('description', document.getElementById('complaint-description').value);
-            formData.append('location', document.getElementById('complaint-location').value);
-            
-            // Add all files
-            const files = complaintEvidence.files;
-            for (let i = 0; i < files.length; i++) {
-                formData.append('evidence', files[i]);
+            if (!userInfo || !userInfo.token) {
+                alert('You must be logged in to submit a complaint.');
+                window.location.href = 'login.html'; // Path relative to current admin folder
+                return;
             }
-            
+
+            if (!title) {
+                alert('Please select a complaint category.');
+                return;
+            }
+
+            const evidenceImagesInput = document.getElementById('evidenceImages');
+            const evidenceVideosInput = document.getElementById('evidenceVideos');
+            const evidencePdfsInput = document.getElementById('evidencePdfs');
+
+            const evidenceImages = [];
+            const evidenceVideos = [];
+            const evidencePdfs = [];
+
+            if (evidenceImagesInput.files.length > 0) {
+                for (let i = 0; i < evidenceImagesInput.files.length; i++) {
+                    evidenceImages.push(`https://placehold.co/300x200/FF0000/FFFFFF?text=Image_${i+1}`);
+                }
+            }
+
+            if (evidenceVideosInput.files.length > 0) {
+                for (let i = 0; i < evidenceVideosInput.files.length; i++) {
+                    evidenceVideos.push(`https://example.com/videos/video_${i+1}.mp4`);
+                }
+            }
+
+            if (evidencePdfsInput.files.length > 0) {
+                for (let i = 0; i < evidencePdfsInput.files.length; i++) {
+                    evidencePdfs.push(`https://example.com/pdfs/document_${i+1}.pdf`);
+                }
+            }
+
             try {
-                const response = await fetch('/api/complaints', {
+                const res = await fetch(`${API_URL}/complaints`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${userInfo.token}`,
                     },
-                    body: formData
+                    body: JSON.stringify({
+                        title,
+                        description,
+                        evidenceImages,
+                        evidenceVideos,
+                        evidencePdfs
+                    }),
                 });
 
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.message || 'Failed to submit complaint');
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert('Complaint submitted successfully!');
+                    submitComplaintForm.reset();
+                    window.location.href = 'my-complaints.html'; // Path relative to current admin folder
+                } else {
+                    alert(data.message || 'Failed to submit complaint');
                 }
-
-                displayMessage(complaintMessage, 'Complaint submitted successfully!', false);
-                
-                // Reset form and preview
-                complaintForm.reset();
-                filePreview.innerHTML = '';
-                
-                // Redirect to complaints list
-                setTimeout(() => {
-                    window.location.href = '/my-complaints.html';
-                }, 1500);
             } catch (error) {
-                displayMessage(complaintError, error.message, true);
-            }
-        });
-    }
-
-    // Handle anonymous complaint submission
-    if (anonymousForm) {
-        anonymousForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData();
-            const anonymousMessage = document.getElementById('anonymous-message');
-            const anonymousError = document.getElementById('anonymous-error');
-            
-            formData.append('category', document.getElementById('anonymous-category').value);
-            formData.append('description', document.getElementById('anonymous-description').value);
-            formData.append('location', document.getElementById('anonymous-location').value);
-            formData.append('contactEmail', document.getElementById('anonymous-email').value || '');
-            
-            // Add all files
-            const files = anonymousEvidence.files;
-            for (let i = 0; i < files.length; i++) {
-                formData.append('evidence', files[i]);
-            }
-            
-            try {
-                const response = await fetch('/api/complaints/anonymous', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.message || 'Failed to submit anonymous complaint');
-                }
-
-                displayMessage(anonymousMessage, 
-                    `Anonymous complaint submitted successfully! Reference ID: ${data.referenceId}` + 
-                    (data.contactEmail ? ' (Updates will be sent to your email)' : ''), 
-                    false);
-                
-                // Reset form and preview
-                anonymousForm.reset();
-                anonymousFilePreview.innerHTML = '';
-                
-            } catch (error) {
-                displayMessage(anonymousError, error.message, true);
+                console.error('Error submitting complaint:', error);
+                alert('An error occurred during complaint submission. Please try again.');
             }
         });
     }
 });
 
-// Utility function to display messages
-function displayMessage(element, message, isError) {
-    element.textContent = message;
-    element.style.display = 'block';
-    element.style.color = isError ? '#dc3545' : '#28a745';
-    
-    setTimeout(() => {
-        element.style.display = 'none';
-    }, 5000);
-}
+async function fetchMyComplaints() {
+    const complaintsList = document.getElementById('complaintsList');
+    const noComplaintsMessage = document.getElementById('noComplaintsMessage');
+    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
-// Handle my complaints page
-if (window.location.pathname === '/my-complaints.html') {
-    document.addEventListener('DOMContentLoaded', function() {
-        loadMyComplaints();
-        
-        // Status filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                filterComplaints(btn.dataset.status);
-            });
-        });
-    });
-}
+    if (!userInfo || !userInfo.token) {
+        if (noComplaintsMessage) noComplaintsMessage.textContent = 'Please log in to view your complaints.';
+        if (complaintsList) complaintsList.innerHTML = '';
+        window.location.href = 'login.html'; // Path relative to current admin folder
+        return;
+    }
 
-async function loadMyComplaints() {
-    const complaintsList = document.getElementById('citizen-complaints-list');
-    const errorElement = document.getElementById('my-complaints-error');
-    
-    if (!complaintsList) return;
-    
-    complaintsList.innerHTML = '<div class="loading-spinner"></div>';
-    errorElement.textContent = '';
-    
     try {
-        const response = await fetch('/api/complaints', {
+        const res = await fetch(`${API_URL}/complaints`, {
+            method: 'GET',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+                Authorization: `Bearer ${userInfo.token}`,
+            },
         });
-        
-        if (!response.ok) {
-            throw new Error('Failed to load complaints');
+
+        const complaints = await res.json();
+
+        if (res.ok) {
+            if (complaints.length === 0) {
+                if (noComplaintsMessage) noComplaintsMessage.classList.remove('hidden');
+                if (complaintsList) complaintsList.innerHTML = '';
+            } else {
+                if (noComplaintsMessage) noComplaintsMessage.classList.add('hidden');
+                if (complaintsList) {
+                    complaintsList.innerHTML = complaints.map(complaint => `
+                        <div class="complaint-card bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+                            <h3 class="text-xl font-bold text-gray-900 mb-3">${complaint.title}</h3>
+                            <p class="text-gray-700 mb-4 flex-grow line-clamp-3">${complaint.description}</p>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-gray-600">Status:</span>
+                                <span class="status-badge status-${complaint.status.replace(/\s/g, '')}">${complaint.status}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-4">Submitted: ${new Date(complaint.createdAt).toLocaleDateString()}</p>
+                            <a href="complaint-detail.html?id=${complaint._id}"
+                               class="mt-auto inline-block text-center px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-md
+                                      hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105">
+                                View Details
+                            </a>
+                        </div>
+                    `).join('');
+                }
+            }
+        } else {
+            alert(complaints.message || 'Failed to fetch complaints');
+            localStorage.removeItem('userInfo');
+            window.location.href = 'login.html'; // Path relative to current admin folder
         }
-        
-        const complaints = await response.json();
-        
-        if (complaints.length === 0) {
-            complaintsList.innerHTML = '<p class="no-complaints">No complaints submitted yet.</p>';
-            return;
-        }
-        
-        renderComplaintsList(complaintsList, complaints);
     } catch (error) {
-        complaintsList.innerHTML = '';
-        displayMessage(errorElement, error.message, true);
+        console.error('Error fetching complaints:', error);
+        alert('An error occurred while fetching complaints. Please try again.');
+        localStorage.removeItem('userInfo');
+        window.location.href = 'login.html'; // Path relative to current admin folder
     }
 }
 
-function renderComplaintsList(container, complaints) {
-    container.innerHTML = complaints.map(complaint => `
-        <div class="complaint-card" data-id="${complaint._id}" data-status="${complaint.status}">
-            <h3>
-                ${complaint.category} 
-                <span class="status-badge" data-status="${complaint.status}">${complaint.status}</span>
-            </h3>
-            <p><strong>Description:</strong> ${complaint.description}</p>
-            <p><strong>Location:</strong> ${complaint.location}</p>
-            <p><strong>Submitted:</strong> ${new Date(complaint.createdAt).toLocaleDateString()}</p>
-            <a href="/complaint-detail.html?id=${complaint._id}" class="view-detail-btn">
-                <i class="fas fa-eye"></i> View Details
-            </a>
-        </div>
-    `).join('');
-}
+async function fetchComplaintDetail() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const complaintId = urlParams.get('id');
 
-function filterComplaints(status) {
-    const complaintsList = document.getElementById('citizen-complaints-list');
-    if (!complaintsList) return;
-    
-    const allComplaints = Array.from(complaintsList.querySelectorAll('.complaint-card'));
-    
-    allComplaints.forEach(card => {
-        if (status === 'all' || card.dataset.status === status) {
-            card.style.display = '';
+    if (!complaintId) {
+        alert('No complaint ID provided.');
+        window.location.href = 'my-complaints.html'; // Path relative to current admin folder
+        return;
+    }
+
+    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+
+    if (!userInfo || !userInfo.token) {
+        alert('You must be logged in to view complaint details.');
+        window.location.href = 'login.html'; // Path relative to current admin folder
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/complaints/${complaintId}`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${userInfo.token}`,
+            },
+        });
+
+        const complaint = await res.json();
+
+        if (res.ok) {
+            document.getElementById('detailTitle').textContent = complaint.title;
+            document.getElementById('detailDescription').textContent = complaint.description;
+            const statusSpan = document.getElementById('detailStatus');
+            statusSpan.textContent = complaint.status;
+            statusSpan.className = `font-bold status-badge status-${complaint.status.replace(/\s/g, '')}`;
+            document.getElementById('detailUser').textContent = complaint.user ? complaint.user.fullName || complaint.user.username : 'Unknown User';
+            document.getElementById('detailDate').textContent = new Date(complaint.createdAt).toLocaleDateString();
+
+            const evidenceImagesDiv = document.getElementById('evidenceImages');
+            const evidenceVideosDiv = document.getElementById('evidenceVideos');
+            const evidencePdfsDiv = document.getElementById('evidencePdfs');
+            const noEvidenceMessage = document.getElementById('noEvidenceMessage');
+
+            let hasEvidence = false;
+
+            if (complaint.evidenceImages && complaint.evidenceImages.length > 0) {
+                hasEvidence = true;
+                evidenceImagesDiv.innerHTML = complaint.evidenceImages.map(url => `
+                    <a href="${url}" target="_blank" class="block rounded-lg overflow-hidden shadow-md hover:shadow-lg transition">
+                        <img src="${url}" alt="Evidence Image" class="w-full h-32 object-cover">
+                    </a>
+                `).join('');
+            } else {
+                evidenceImagesDiv.innerHTML = '';
+            }
+
+            if (complaint.evidenceVideos && complaint.evidenceVideos.length > 0) {
+                hasEvidence = true;
+                evidenceVideosDiv.innerHTML = complaint.evidenceVideos.map(url => `
+                    <div class="flex items-center space-x-2 bg-gray-100 p-3 rounded-md shadow-sm">
+                        <i class="fas fa-video text-blue-500 text-xl"></i>
+                        <a href="${url}" target="_blank" class="text-blue-600 hover:underline truncate">${url.split('/').pop()}</a>
+                    </div>
+                `).join('');
+            } else {
+                evidenceVideosDiv.innerHTML = '';
+            }
+
+            if (complaint.evidencePdfs && complaint.evidencePdfs.length > 0) {
+                hasEvidence = true;
+                evidencePdfsDiv.innerHTML = complaint.evidencePdfs.map(url => `
+                    <div class="flex items-center space-x-2 bg-gray-100 p-3 rounded-md shadow-sm">
+                        <i class="fas fa-file-pdf text-red-500 text-xl"></i>
+                        <a href="${url}" target="_blank" class="text-blue-600 hover:underline truncate">${url.split('/').pop()}</a>
+                    </div>
+                `).join('');
+            } else {
+                evidencePdfsDiv.innerHTML = '';
+            }
+
+            if (hasEvidence) {
+                noEvidenceMessage.classList.add('hidden');
+            } else {
+                noEvidenceMessage.classList.remove('hidden');
+            }
+
+            const adminFeedbackText = document.getElementById('detailAdminFeedback');
+            const noAdminFeedbackMessage = document.getElementById('noAdminFeedbackMessage');
+
+            if (complaint.adminFeedback) {
+                adminFeedbackText.textContent = complaint.adminFeedback;
+                adminFeedbackText.classList.remove('hidden');
+                noAdminFeedbackMessage.classList.add('hidden');
+            } else {
+                adminFeedbackText.textContent = '';
+                adminFeedbackText.classList.add('hidden');
+                noAdminFeedbackMessage.classList.remove('hidden');
+            }
+
         } else {
-            card.style.display = 'none';
+            alert(complaint.message || 'Failed to fetch complaint details');
+            window.location.href = 'my-complaints.html';
         }
-    });
+    } catch (error) {
+        console.error('Error fetching complaint details:', error);
+        alert('An error occurred while fetching complaint details. Please try again.');
+        window.location.href = 'my-complaints.html';
+    }
 }
