@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const User = require('../models/User');
-// Assuming you have a Complaint model. Uncomment this line.
-// const Complaint = require('../models/Complaint');
+const Complaint = require('../models/Complaint'); // Uncomment this line to use the Complaint model
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 const upload = require('../utils/fileUpload');
 const ErrorResponse = require('../utils/ErrorResponse');
@@ -161,15 +160,11 @@ router.get('/stats', authenticate, authorize('admin'), async (req, res, next) =>
     try {
         const totalUsers = await User.countDocuments();
 
-        // Fetch actual active complaints (e.g., status 'Pending' or 'In Progress')
-        // Assuming your Complaint model has a 'status' field.
-        // If Complaint model is not defined, this will still use dummy data.
         let activeComplaintsCount = 0;
         let resolvedCasesCount = 0;
         let recentActivities = [];
 
-        // Check if Complaint model is available, otherwise use dummy data
-        if (typeof Complaint !== 'undefined') {
+        if (typeof Complaint !== 'undefined' && Complaint.collection) { // Check if Complaint model is properly defined
             activeComplaintsCount = await Complaint.countDocuments({
                 status: { $in: ['Pending', 'In Progress'] }
             });
@@ -177,22 +172,19 @@ router.get('/stats', authenticate, authorize('admin'), async (req, res, next) =>
                 status: 'Resolved'
             });
 
-            // Fetch recent complaints for activity log
             recentActivities = await Complaint.find()
-                                            .sort({ createdAt: -1 }) // Sort by newest first
-                                            .limit(5) // Get latest 5 activities
-                                            .populate('submittedBy', 'username') // Populate user who submitted
-                                            .select('title status createdAt'); // Select relevant fields
+                                            .sort({ createdAt: -1 })
+                                            .limit(5)
+                                            .populate('user', 'username') // Populate the 'user' field
+                                            .select('title status createdAt');
 
-            // Format recent activities for display
             recentActivities = recentActivities.map(comp => ({
                 id: comp._id,
                 type: 'Complaint',
-                description: `Complaint "${comp.title}" (Status: ${comp.status}) filed by ${comp.submittedBy ? comp.submittedBy.username : 'N/A'}.`,
+                description: `Complaint "${comp.title}" (Status: ${comp.status}) filed by ${comp.user ? comp.user.username : 'N/A'}.`,
                 timestamp: comp.createdAt
             }));
 
-            // Add other types of recent activities if you have them (e.g., new user registrations)
             const recentUsers = await User.find()
                                         .sort({ createdAt: -1 })
                                         .limit(5)
@@ -205,12 +197,10 @@ router.get('/stats', authenticate, authorize('admin'), async (req, res, next) =>
                 timestamp: user.createdAt
             }));
 
-            // Combine and sort all recent activities by timestamp
             recentActivities = [...recentActivities, ...userActivities]
                                 .sort((a, b) => b.timestamp - a.timestamp)
-                                .slice(0, 5); // Take top 5 overall
+                                .slice(0, 5);
         } else {
-            // Dummy data if Complaint model is not available
             activeComplaintsCount = 15;
             resolvedCasesCount = 85;
             recentActivities = [
@@ -219,7 +209,6 @@ router.get('/stats', authenticate, authorize('admin'), async (req, res, next) =>
                 { id: 3, type: 'Case Resolved', description: 'Case #5678 resolved by Jane Smith.', timestamp: new Date(Date.now() - 7200000) },
             ];
         }
-
 
         res.status(200).json({
             success: true,
@@ -264,7 +253,9 @@ router.get('/users', authenticate, authorize('admin'), async (req, res, next) =>
     }
 });
 
-
+// @desc    Get all complaints (for admin management)
+// @route   GET /api/admin/complaints
+// @access  Private/Admin
 router.get('/complaints', authenticate, authorize('admin'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -284,20 +275,28 @@ router.get('/complaints', authenticate, authorize('admin'), async (req, res, nex
         let complaints = [];
         let totalComplaints = 0;
 
-        if (typeof Complaint === 'undefined') { // Placeholder for Complaint model
-            complaints = [
-                { _id: 'comp1', title: 'Leaking Pipe', submittedBy: { username: 'John Doe' }, createdAt: new Date(), status: 'Pending', priority: 'high' },
-                { _id: 'comp2', title: 'Pothole on Road', submittedBy: { username: 'Jane Smith' }, createdAt: new Date(Date.now() - 86400000), status: 'In Progress', priority: 'medium' },
-                { _id: 'comp3', title: 'Streetlight Out', submittedBy: { username: 'Alice Brown' }, createdAt: new Date(Date.now() - 172800000), status: 'Resolved', priority: 'low' },
-                { _id: 'comp4', title: 'Illegal Dumping', submittedBy: { username: 'Bob White' }, createdAt: new Date(Date.now() - 259200000), status: 'Pending', priority: 'high' },
-            ].filter(c => {
+        if (typeof Complaint !== 'undefined' && Complaint.collection) { // Check if Complaint model is properly defined
+            totalComplaints = await Complaint.countDocuments(query);
+            complaints = await Complaint.find(query)
+                                        .populate('user', 'username') // Populate user who submitted it
+                                        .sort({ createdAt: -1 })
+                                        .skip(skip)
+                                        .limit(limit);
+        } else {
+            // Dummy data if Complaint model is not available
+            const dummyComplaints = [
+                { _id: 'comp1', title: 'Leaking Pipe', user: { username: 'John Doe' }, createdAt: new Date(), status: 'Pending', priority: 'High', description: 'Pipe is leaking badly.', location: { text: '123 Main St' }, evidenceImages: ['uploads/image1.png'], evidenceVideos: [], evidencePdfs: [] },
+                { _id: 'comp2', title: 'Pothole on Road', user: { username: 'Jane Smith' }, createdAt: new Date(Date.now() - 86400000), status: 'In Progress', priority: 'Medium', description: 'Large pothole on Elm Street.', location: { text: '456 Elm St' }, evidenceImages: [], evidenceVideos: [], evidencePdfs: [] },
+                { _id: 'comp3', title: 'Streetlight Out', user: { username: 'Alice Brown' }, createdAt: new Date(Date.now() - 172800000), status: 'Resolved', priority: 'Low', description: 'Streetlight near park is out.', location: { text: '789 Park Ave' }, evidenceImages: [], evidenceVideos: [], evidencePdfs: [] },
+                { _id: 'comp4', title: 'Illegal Dumping', user: { username: 'Bob White' }, createdAt: new Date(Date.now() - 259200000), status: 'Pending', priority: 'High', description: 'Trash dumped near river.', location: { text: 'River Side' }, evidenceImages: ['uploads/dumping.png'], evidenceVideos: [], evidencePdfs: [] },
+            ];
+            complaints = dummyComplaints.filter(c => {
                 const statusMatch = statusFilter === 'all' || c.status === statusFilter;
                 const priorityMatch = priorityFilter === 'all' || c.priority === priorityFilter;
                 return statusMatch && priorityMatch;
             }).slice(skip, skip + limit);
             totalComplaints = complaints.length;
         }
-
 
         res.status(200).json({
             success: true,
@@ -310,7 +309,89 @@ router.get('/complaints', authenticate, authorize('admin'), async (req, res, nex
         });
 
     } catch (err) {
+        console.error('Error fetching complaints:', err);
         next(new ErrorResponse('Could not fetch complaints', 500));
+    }
+});
+
+// @desc    Get single complaint by ID
+// @route   GET /api/admin/complaints/:id
+// @access  Private/Admin
+router.get('/complaints/:id', authenticate, authorize('admin'), async (req, res, next) => {
+    try {
+        const complaintId = req.params.id;
+        let complaint = null;
+
+        if (typeof Complaint !== 'undefined' && Complaint.collection) {
+            complaint = await Complaint.findById(complaintId).populate('user', 'username email');
+        } else {
+            // Dummy data for a single complaint
+            const dummyComplaints = [
+                { _id: 'comp1', title: 'Leaking Pipe', user: { username: 'John Doe', email: 'john@example.com' }, createdAt: new Date(), status: 'Pending', priority: 'High', description: 'Pipe is leaking badly in the kitchen.', location: { text: '123 Main St, Apt 4B' }, evidenceImages: ['uploads/leaking_pipe.jpg'], evidenceVideos: [], evidencePdfs: [] },
+                { _id: 'comp2', title: 'Pothole on Road', user: { username: 'Jane Smith', email: 'jane@example.com' }, createdAt: new Date(Date.now() - 86400000), status: 'In Progress', priority: 'Medium', description: 'Large pothole on Elm Street near the school.', location: { text: '456 Elm St' }, evidenceImages: [], evidenceVideos: ['uploads/pothole_video.mp4'], evidencePdfs: [] },
+                { _id: 'comp3', title: 'Streetlight Out', user: { username: 'Alice Brown', email: 'alice@example.com' }, createdAt: new Date(Date.now() - 172800000), status: 'Resolved', priority: 'Low', description: 'Streetlight near park entrance is out, making it dark at night.', location: { text: '789 Park Ave' }, evidenceImages: [], evidenceVideos: [], evidencePdfs: ['uploads/streetlight_report.pdf'] },
+                { _id: 'comp4', title: 'Illegal Dumping', user: { username: 'Bob White', email: 'bob@example.com' }, createdAt: new Date(Date.now() - 259200000), status: 'Pending', priority: 'High', description: 'Trash dumped near river, attracting pests.', location: { text: 'River Side, near bridge' }, evidenceImages: ['uploads/illegal_dumping.jpg', 'uploads/more_dumping.png'], evidenceVideos: [], evidencePdfs: [] },
+            ];
+            complaint = dummyComplaints.find(c => c._id === complaintId);
+        }
+
+        if (!complaint) {
+            return next(new ErrorResponse('Complaint not found', 404));
+        }
+
+        res.status(200).json({
+            success: true,
+            data: complaint
+        });
+
+    } catch (err) {
+        console.error('Error fetching single complaint:', err);
+        next(new ErrorResponse('Could not fetch complaint details', 500));
+    }
+});
+
+// @desc    Update complaint status and/or priority
+// @route   PUT /api/admin/complaints/:id/status
+// @access  Private/Admin
+router.put('/complaints/:id/status', authenticate, authorize('admin'), async (req, res, next) => {
+    try {
+        const complaintId = req.params.id;
+        const { status, priority } = req.body; // Expecting new status and/or priority
+
+        if (!status && !priority) {
+            return next(new ErrorResponse('No status or priority provided for update', 400));
+        }
+
+        let updatedComplaint = null;
+        if (typeof Complaint !== 'undefined' && Complaint.collection) {
+            const updateFields = {};
+            if (status) updateFields.status = status;
+            if (priority) updateFields.priority = priority;
+
+            updatedComplaint = await Complaint.findByIdAndUpdate(
+                complaintId,
+                { $set: updateFields },
+                { new: true, runValidators: true } // Return the updated document and run schema validators
+            );
+        } else {
+            // Dummy update for demonstration
+            console.log(`Dummy update: Complaint ${complaintId} to status: ${status}, priority: ${priority}`);
+            updatedComplaint = { _id: complaintId, status: status || 'N/A', priority: priority || 'N/A', message: 'Dummy update successful' };
+        }
+
+        if (!updatedComplaint) {
+            return next(new ErrorResponse('Complaint not found or could not be updated', 404));
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Complaint updated successfully',
+            data: updatedComplaint
+        });
+
+    } catch (err) {
+        console.error('Error updating complaint status:', err);
+        next(new ErrorResponse('Could not update complaint status', 500));
     }
 });
 

@@ -1,19 +1,22 @@
 // public/js/dashboard-init.js
 
-// Import necessary functions. loadSidebar is from shared.js, not admin.js.
+// Import necessary functions.
 import { loadHeader, loadFooter, initTooltips, loadSidebar } from './shared.js';
-import { fetchDashboardStats } from './admin.js'; // fetchDashboardStats is from admin.js
-
+// Corrected: Import loadReports and ensure absolute path for admin.js
+import { fetchDashboardStats, loadReports } from '/admin/js/admin.js'; 
 
 document.addEventListener('DOMContentLoaded', () => {
     // Load common components
     loadHeader();
-    loadSidebar(); // Now correctly imported from shared.js
+    loadSidebar(); 
     loadFooter();
     initTooltips();
 
     // Function to fetch dashboard statistics
     fetchDashboardStats();
+    
+    // IMPORTANT: Load ML-generated reports and predictions for the dashboard
+    loadReports(); // This call was missing and is crucial for charts
 
     // Add event listeners for quick action buttons
     const addUsersBtn = document.querySelector('.quick-actions-grid .btn-primary:nth-of-type(1)');

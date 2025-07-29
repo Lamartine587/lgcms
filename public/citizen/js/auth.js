@@ -1,49 +1,39 @@
 // public/js/auth.js
 
-/**
- * Handles citizen user registration by sending data to the backend API.
- * @param {Object} formData - The registration data (fullName, username, email, password).
- * @returns {Promise<Object>} - A promise that resolves with the API response data.
- */
-export async function registerCitizen(formData) {
+// Function to handle citizen registration
+export async function registerCitizen(fullName, username, email, password) {
     try {
-        // Corrected: API path to /api/users/register
         const response = await fetch('/api/users/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(formData)
+            body: JSON.stringify({ fullName, username, email, password, role: 'citizen' }) // Ensure role is sent
         });
 
         const data = await response.json();
 
         if (!response.ok) {
+            // If the server responded with an error, throw it
             throw new Error(data.message || 'Registration failed');
         }
 
-        return data;
+        return data; // Return success data from the backend
     } catch (error) {
         console.error('Error during citizen registration:', error);
-        throw error;
+        throw error; // Re-throw to be handled by the caller (register-init.js)
     }
 }
 
-/**
- * Handles citizen user login by sending credentials to the backend API.
- * Stores the received token in localStorage upon successful login.
- * @param {Object} credentials - The user's login credentials (email, password).
- * @returns {Promise<Object>} - A promise that resolves with the API response data.
- */
-export async function loginCitizen(credentials) {
+// Function to handle login for both citizens and admins
+export async function loginUser(email, password) {
     try {
-        // Corrected: API path to /api/users/login
         const response = await fetch('/api/users/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(credentials)
+            body: JSON.stringify({ email, password })
         });
 
         const data = await response.json();
@@ -52,57 +42,21 @@ export async function loginCitizen(credentials) {
             throw new Error(data.message || 'Login failed');
         }
 
-        if (data.token) {
-            localStorage.setItem('token', data.token);
-        }
+        // Store token in localStorage
+        localStorage.setItem('token', data.token);
 
-        return data;
+        return data; // Return user data and token
     } catch (error) {
-        console.error('Error during citizen login:', error);
+        console.error('Error during login:', error);
         throw error;
     }
 }
 
-/**
- * Logs out the citizen user by removing the token from localStorage.
- * Optionally, can send a request to the backend to invalidate the session/token.
- */
-export async function logoutCitizen() {
-    console.log('Attempting to log out citizen...');
-    const token = localStorage.getItem('token');
-
-    if (token) {
-        try {
-            // Corrected: API path to /api/users/logout
-            const response = await fetch('/api/users/logout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                console.log('Citizen token successfully invalidated on server.');
-            } else {
-                console.error('Failed to invalidate citizen token on server:', await response.text());
-            }
-        } catch (error) {
-            console.error('Error during server-side citizen logout:', error);
-        }
-    }
-
+// Function to handle logout
+export function logoutUser() {
+    // For a client-side logout, simply remove the token
     localStorage.removeItem('token');
-    console.log('Client-side citizen token removed. Redirecting...');
-
-    window.location.href = '/citizen/login.html';
-}
-
-/**
- * Checks if a citizen user is authenticated by verifying the presence of a token.
- * @returns {boolean} - True if a token is found, false otherwise.
- */
-export function isCitizenAuthenticated() {
-    const token = localStorage.getItem('token');
-    return !!token;
+    // You might also want to redirect the user
+    // window.location.href = '/login.html'; // Or wherever your main login page is
+    console.log('User logged out.');
 }

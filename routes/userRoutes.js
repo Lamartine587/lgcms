@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const { validateUserRegistration, validateLogin } = require('../utils/validation'); // Assuming these exist
-const { generateToken } = require('../utils/auth'); // Assuming this exists
-const { authenticate } = require('../middleware/authMiddleware'); // Assuming this exists
-const ErrorResponse = require('../utils/ErrorResponse'); // Assuming this exists
+// Assuming you have a Complaint model. Uncomment this line if you have it.
+// const Complaint = require('../models/Complaint'); 
+const { validateUserRegistration, validateLogin } = require('../utils/validation');
+const { generateToken } = require('../utils/auth');
+const { authenticate, authorize } = require('../middleware/authMiddleware');
+const ErrorResponse = require('../utils/ErrorResponse');
 
 // @desc    Register a user
 // @route   POST /api/users/register
@@ -18,7 +20,6 @@ router.post('/register', validateUserRegistration, async (req, res, next) => {
       return next(new ErrorResponse('User already exists', 400));
     }
 
-    // Pass fullName to the User.create method
     const user = await User.create({ fullName, username, email, password, role });
     const token = generateToken(user._id, user.role);
 
@@ -30,7 +31,7 @@ router.post('/register', validateUserRegistration, async (req, res, next) => {
         username: user.username,
         email: user.email,
         role: user.role,
-        avatar: user.avatar // Assuming avatar is handled by default in User model or later
+        avatar: user.avatar
       }
     });
   } catch (err) {
@@ -73,12 +74,15 @@ router.post('/login', validateLogin, async (req, res, next) => {
   }
 });
 
-// @desc    Get current user
+// @desc    Get current user profile
 // @route   GET /api/users/me
 // @access  Private
-router.get('/me', authenticate, async (req, res, next) => {
+router.get('/me', authenticate, authorize('citizen'), async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
+    if (!user) {
+      return next(new ErrorResponse('User not found', 404));
+    }
     res.status(200).json({
       success: true,
       data: user
@@ -87,5 +91,58 @@ router.get('/me', authenticate, async (req, res, next) => {
     next(err);
   }
 });
+
+// @desc    Get citizen dashboard statistics
+// @route   GET /api/users/dashboard-stats
+// @access  Private (Citizen)
+router.get('/dashboard-stats', authenticate, authorize('citizen'), async (req, res, next) => {
+    try {
+        const userId = req.user.id; // Get the logged-in user's ID
+
+        // Placeholder for actual data fetching:
+        // You would query your Complaint model here to get user-specific stats
+        let totalComplaints = 0;
+        let pendingComplaints = 0;
+        let resolvedComplaints = 0;
+        let recentComplaints = [];
+
+        // Example: If Complaint model exists and is imported
+        if (typeof Complaint !== 'undefined') {
+            totalComplaints = await Complaint.countDocuments({ user: userId });
+            pendingComplaints = await Complaint.countDocuments({ user: userId, status: 'Pending' });
+            resolvedComplaints = await Complaint.countDocuments({ user: userId, status: 'Resolved' });
+            
+            recentComplaints = await Complaint.find({ user: userId })
+                                            .sort({ createdAt: -1 })
+                                            .limit(5)
+                                            .select('title status createdAt');
+        } else {
+            // Dummy data if Complaint model is not available for testing
+            totalComplaints = 10;
+            pendingComplaints = 3;
+            resolvedComplaints = 7;
+            recentComplaints = [
+                { _id: 'c1', title: 'Road Pothole', status: 'Pending', createdAt: new Date(Date.now() - 86400000) },
+                { _id: 'c2', title: 'Trash Overflow', status: 'Resolved', createdAt: new Date(Date.now() - 2 * 86400000) },
+                { _id: 'c3', title: 'Streetlight Broken', status: 'In Progress', createdAt: new Date(Date.now() - 3 * 86400000) },
+            ];
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalComplaints,
+                pendingComplaints,
+                resolvedComplaints,
+                recentComplaints
+            }
+        });
+
+    } catch (err) {
+        console.error('Error fetching citizen dashboard stats:', err);
+        next(new ErrorResponse('Could not fetch citizen dashboard statistics', 500));
+    }
+});
+
 
 module.exports = router;

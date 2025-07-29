@@ -15,7 +15,7 @@
         <div id="sidebar-placeholder"></div> <!-- Placeholder for citizen sidebar -->
         
         <main class="citizen-main-content"> <!-- Main content area for citizen pages -->
-            <div class="auth-card card animated-fade-in-up"> <!-- Reusing auth-card and adding animation class -->
+            <div class="auth-card card animated-fade-in-up"> 
                 <div class="auth-header">
                     <h2><i class="fas fa-user-circle"></i> Citizen Login</h2>
                     <p>Access your citizen portal</p>
@@ -34,6 +34,7 @@
                         <a href="/citizen/forgot-password.html" class="forgot-password">Forgot Password?</a>
                     </div>
                 </form>
+                <div id="message" class="auth-message"></div> <!-- Added div for messages -->
                 <div class="auth-footer">
                     <p>Don't have an account? <a href="/citizen/register.html">Register here</a></p>
                 </div>
@@ -41,18 +42,8 @@
         </main>
     </div>
     
-    <div id="footer-placeholder"></div>
-    
-    <script src="/public/js/shared.js" type="module"></script>
-    <script src="/public/js/auth.js" type="module"></script>
-    <script type="module">
-        import { loadHeader, loadSidebar, loadFooter } from '/js/shared.js'; // Use absolute paths
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadHeader();
-            loadSidebar(); // Load citizen sidebar
-            loadFooter();
-        });
-    </script>
+    <div id="footer-placeholder"></div> 
+    <script src="js/auth.js" type="module"></script>
+    <script src="js/login.js" type="module"></script>
 </body>
 </html>

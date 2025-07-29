@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports & Analytics</title>
     <link rel="stylesheet" href="/css/style.css">
-    <!-- Optional: Font Awesome for icons if you want to use them -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Chart.js CDN link removed as per your request -->
 </head>
 <body>
     <div id="header-container"></div>
@@ -22,6 +20,7 @@
             </header>
             
             <section class="filter-section card">
+                <h2>Report Filters</h2>
                 <div class="filter-controls-grid">
                     <div class="form-group">
                         <label for="start-date">Start Date:</label>
@@ -41,24 +40,44 @@
             </section>
             
             <section class="charts-section">
-                <h2>Visual Data</h2>
+                <h2>Visual Data & Predictions</h2>
                 <div class="charts-grid">
-                    <!-- Canvas elements removed as per your request for ML bot integration -->
                     <div class="chart-card card">
-                        <h3>Complaint Status Distribution (ML Report)</h3>
-                        <div id="ml-complaints-report">
-                            <p class="loading-text">Loading ML-generated complaint status report...</p>
-                            <!-- ML bot generated content will go here -->
+                        <h3>Complaint Status Distribution</h3>
+                        <div id="complaint-status-chart-container" class="chart-image-container">
+                            <p class="loading-text">Loading chart...</p>
+                            <img id="complaint-status-chart" src="" alt="Complaint Status Distribution" style="width:100%; height:auto; display:none;">
                         </div>
                     </div>
                     <div class="chart-card card">
-                        <h3>User Role Distribution (ML Report)</h3>
-                        <div id="ml-users-report">
-                            <p class="loading-text">Loading ML-generated user role report...</p>
-                            <!-- ML bot generated content will go here -->
+                        <h3>Complaints Over Time</h3>
+                        <div id="complaint-trends-chart-container" class="chart-image-container">
+                            <p class="loading-text">Loading chart...</p>
+                            <img id="complaint-trends-chart" src="" alt="Complaints Over Time" style="width:100%; height:auto; display:none;">
                         </div>
                     </div>
-                    <!-- Add more report containers as needed -->
+                    <div class="chart-card card">
+                        <h3>User Role Distribution</h3>
+                        <div id="user-role-chart-container" class="chart-image-container">
+                            <p class="loading-text">Loading chart...</p>
+                            <img id="user-role-chart" src="" alt="User Role Distribution" style="width:100%; height:auto; display:none;">
+                        </div>
+                    </div>
+                    <div class="chart-card card">
+                        <h3>Predict Complaint Resolution Time</h3>
+                        <div id="prediction-section">
+                            <div class="form-group">
+                                <label for="desc_length">Description Length (words)</label>
+                                <input type="number" id="desc_length" class="form-control" value="100" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="num_evidence">Number of Evidence Files</label>
+                                <input type="number" id="num_evidence" class="form-control" value="1" min="0">
+                            </div>
+                            <button id="predict-btn" class="btn btn-primary btn-small"><i class="fas fa-magic"></i> Predict</button>
+                            <p id="prediction-result" class="form-text-muted" style="margin-top: 1rem; font-weight: 600;"></p>
+                        </div>
+                    </div>
                 </div>
             </section>
             
@@ -68,7 +87,6 @@
                 <div class="export-buttons-grid">
                     <button id="export-complaints" class="btn btn-secondary"><i class="fas fa-file-excel"></i> Export Complaints Data</button>
                     <button id="export-users" class="btn btn-secondary"><i class="fas fa-file-csv"></i> Export Users Data</button>
-                    <!-- Add more export buttons as needed -->
                 </div>
             </section>
         </main>
@@ -76,7 +94,6 @@
     
     <div id="footer-container"></div>
     
-    <!-- IMPORTANT: All scripts that use 'import' or 'export' MUST have type="module" -->
     <script src="js/shared.js" type="module"></script>
     <script src="js/admin.js" type="module"></script>
     <script src="js/report.js" type="module"></script>

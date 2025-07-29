@@ -14,18 +14,38 @@ connectDB();
 
 securityMiddleware(app);
 
+// Add Content Security Policy header
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " + // 'unsafe-inline' and 'unsafe-eval' might be needed for some dev tools or older libraries, consider removing in production
+    "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; " + // ALLOW STYLESHEETS FROM FONT AWESOME CDN AND GOOGLE FONTS
+    "img-src 'self' data: http://localhost:5001; " + // Allow images from self and your ML backend
+    "connect-src 'self' http://localhost:5001; " + // ALLOW CONNECTION TO YOUR PYTHON ML BACKEND
+    "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; " + // Allow fonts from Font Awesome CDN and Google Fonts
+    "object-src 'none'; " +
+    "base-uri 'self';"
+  );
+  next();
+});
+
 app.use(morgan('dev'));
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Corrected: Mount citizen user routes at /api/citizen to match auth.js
-app.use('/api/citizen', require('./routes/userRoutes')); 
+// IMPORTANT: Serve the 'uploads' directory for evidence files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Mount your API routes
+app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
-app.use('/api/complaints', require('./routes/complaintRoutes'));
+app.use('/api/complaints', require('./routes/complaintRoutes')); // Ensure this line is present
 
 app.get(['/', '/login', '/register'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -59,6 +79,9 @@ app.get('/citizen/login.html', (req, res) => {
 });
 app.get('/citizen/register.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'citizen', 'register.html'));
+});
+app.get('/citizen/submit-complaint.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'citizen', 'submit-complaint.html'));
 });
 
 

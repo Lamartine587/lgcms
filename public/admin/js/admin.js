@@ -1,4 +1,4 @@
-// public/js/admin.js
+// public/admin/js/admin.js
 
 // Admin Dashboard Functions
 export async function fetchDashboardStats() {
@@ -64,11 +64,6 @@ export async function fetchDashboardStats() {
             console.warn('Activity list element not found.');
         }
 
-        // Charts section - this part is now removed from dashboard.html
-        // If you were to re-add charts to dashboard.html, you'd need Chart.js back
-        // and this code would be relevant again.
-        // For now, these elements will simply not be rendered or updated.
-
     } catch (error) {
         console.error('Error fetching dashboard stats:', error);
         const activityList = document.getElementById('activity-list');
@@ -128,13 +123,27 @@ export async function loadUsers(page = 1) {
                 const paginationContainer = document.getElementById('pagination-container');
                 if (paginationContainer && data.totalPages && data.currentPage) {
                     paginationContainer.innerHTML = '';
-                    for (let i = 1; i <= data.totalPages; i++) {
-                        const pageBtn = document.createElement('button');
-                        pageBtn.textContent = i;
-                        pageBtn.className = `btn-pagination ${i === data.currentPage ? 'active' : ''}`;
-                        pageBtn.addEventListener('click', () => loadUsers(i));
-                        paginationContainer.appendChild(pageBtn);
-                    }
+                    // Previous button
+                    const prevBtn = document.createElement('button');
+                    prevBtn.textContent = 'Previous';
+                    prevBtn.className = 'btn-pagination';
+                    prevBtn.disabled = data.currentPage === 1;
+                    prevBtn.addEventListener('click', () => loadUsers(data.currentPage - 1));
+                    paginationContainer.appendChild(prevBtn);
+
+                    // Page info
+                    const pageInfo = document.createElement('span');
+                    pageInfo.className = 'page-info';
+                    pageInfo.textContent = `Page ${data.currentPage} of ${data.totalPages}`;
+                    paginationContainer.appendChild(pageInfo);
+
+                    // Next button
+                    const nextBtn = document.createElement('button');
+                    nextBtn.textContent = 'Next';
+                    nextBtn.className = 'btn-pagination';
+                    nextBtn.disabled = data.currentPage === data.totalPages;
+                    nextBtn.addEventListener('click', () => loadUsers(data.currentPage + 1));
+                    paginationContainer.appendChild(nextBtn);
                 }
             } else {
                 tableBody.innerHTML = '<tr><td colspan="6" class="loading-text" style="color: red;">Error: Users data is missing or invalid.</td></tr>';
@@ -156,46 +165,101 @@ export async function loadUsers(page = 1) {
 export function editUser(id) { console.log('Edit user:', id); }
 export function deleteUser(id) { console.log('Delete user:', id); }
 
-// loadReports function updated to remove Chart.js specific code
-export function loadReports() {
-    console.log('Loading reports data for ML integration...');
-    // This is where you would integrate with your ML bot's output
-    // For now, it will just display a message or fetch data for the bot.
+// loadReports function updated to fetch and display ML-generated charts
+export async function loadReports() {
+    console.log('Loading ML-generated reports and predictions...');
+    const mlBackendUrl = 'http://localhost:5001'; // Your Python Flask ML backend URL
 
-    const complaintsReportDiv = document.getElementById('ml-complaints-report');
-    if (complaintsReportDiv) {
-        complaintsReportDiv.innerHTML = '<p>ML Bot will generate complaint status report here.</p>';
-        // Example: Fetch data for ML bot
-        // fetch('/api/ml-reports/complaints-status')
-        //     .then(res => res.json())
-        //     .then(data => {
-        //         // Process data and display it or send to ML bot for visualization
-        //         complaintsReportDiv.innerHTML = `<p>ML Bot processed data: ${JSON.stringify(data)}</p>`;
-        //     })
-        //     .catch(error => {
-        //         console.error('Error fetching ML complaints report:', error);
-        //         complaintsReportDiv.innerHTML = '<p style="color: red;">Failed to load ML complaints report.</p>';
-        //     });
-    } else {
-        console.warn('ML complaints report container not found.');
+    // Function to fetch and display an image chart
+    async function fetchChart(endpoint, imgId, containerId) {
+        const imgElement = document.getElementById(imgId);
+        const containerElement = document.getElementById(containerId);
+        if (!imgElement || !containerElement) {
+            console.warn(`Chart elements not found for ${imgId} or ${containerId}`);
+            return;
+        }
+        containerElement.querySelector('.loading-text').style.display = 'block';
+        imgElement.style.display = 'none';
+        imgElement.src = ''; // Clear previous image
+
+        try {
+            const response = await fetch(`${mlBackendUrl}${endpoint}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to fetch chart from ${endpoint}: ${response.status}`);
+            }
+            const data = await response.json();
+            if (data.image) {
+                imgElement.src = `data:image/png;base64,${data.image}`;
+                imgElement.style.display = 'block';
+                containerElement.querySelector('.loading-text').style.display = 'none';
+            } else {
+                imgElement.style.display = 'none';
+                containerElement.querySelector('.loading-text').textContent = data.message || 'No chart generated.';
+            }
+        } catch (error) {
+            console.error(`Error fetching chart from ${endpoint}:`, error);
+            imgElement.style.display = 'none';
+            containerElement.querySelector('.loading-text').textContent = `Error loading chart: ${error.message}`;
+            containerElement.querySelector('.loading-text').style.color = 'red';
+        }
     }
 
-    const usersReportDiv = document.getElementById('ml-users-report');
-    if (usersReportDiv) {
-        usersReportDiv.innerHTML = '<p>ML Bot will generate user role distribution report here.</p>';
-        // Example: Fetch data for ML bot
-        // fetch('/api/ml-reports/user-roles')
-        //     .then(res => res.json())
-        //     .then(data => {
-        //         // Process data and display it or send to ML bot for visualization
-        //         usersReportDiv.innerHTML = `<p>ML Bot processed data: ${JSON.stringify(data)}</p>`;
-        //     })
-        //     .catch(error => {
-        //         console.error('Error fetching ML users report:', error);
-        //         usersReportDiv.innerHTML = '<p style="color: red;">Failed to load ML users report.</p>';
-        //     });
+    // Fetch and display charts
+    fetchChart('/api/ml/complaint_status_distribution', 'complaint-status-chart', 'complaint-status-chart-container');
+    fetchChart('/api/ml/complaint_trends', 'complaint-trends-chart', 'complaint-trends-chart-container');
+    fetchChart('/api/ml/user_role_distribution', 'user-role-chart', 'user-role-chart-container');
+
+    // Prediction functionality
+    const predictBtn = document.getElementById('predict-btn');
+    const descLengthInput = document.getElementById('desc_length');
+    const numEvidenceInput = document.getElementById('num_evidence');
+    const predictionResultP = document.getElementById('prediction-result');
+
+    if (predictBtn && descLengthInput && numEvidenceInput && predictionResultP) {
+        predictBtn.addEventListener('click', async () => {
+            const descLength = parseInt(descLengthInput.value);
+            const numEvidence = parseInt(numEvidenceInput.value);
+
+            if (isNaN(descLength) || isNaN(numEvidence) || descLength < 0 || numEvidence < 0) {
+                predictionResultP.textContent = 'Please enter valid positive numbers.';
+                predictionResultP.style.color = 'red';
+                return;
+            }
+
+            predictionResultP.textContent = 'Predicting...';
+            predictionResultP.style.color = 'gray';
+
+            try {
+                const response = await fetch(`${mlBackendUrl}/api/ml/predict/resolution_time`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        complaint_description_length: descLength,
+                        num_evidence_files: numEvidence
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    predictionResultP.textContent = `Predicted Resolution Time: ${data.predicted_resolution_time_days} days.`;
+                    predictionResultP.style.color = 'green';
+                    console.log('Prediction explanation:', data.explanation);
+                } else {
+                    predictionResultP.textContent = data.message || 'Prediction failed.';
+                    predictionResultP.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error during prediction:', error);
+                predictionResultP.textContent = `Error: ${error.message}`;
+                predictionResultP.style.color = 'red';
+            }
+        });
     } else {
-        console.warn('ML users report container not found.');
+        console.warn('Prediction elements not found.');
     }
 }
 
@@ -213,6 +277,9 @@ export async function loadComplaints(page = 1, statusFilter = 'all', priorityFil
         if (statusFilter !== 'all') {
             url += `&status=${statusFilter}`;
         }
+        // Note: priorityFilter is included in the URL, but your Complaint model
+        // does not currently have a 'priority' field. If you want to filter
+        // by priority, you will need to add it to your Complaint model schema.
         if (priorityFilter !== 'all') {
             url += `&priority=${priorityFilter}`;
         }
@@ -237,17 +304,17 @@ export async function loadComplaints(page = 1, statusFilter = 'all', priorityFil
 
             if (data.complaints && Array.isArray(data.complaints)) {
                 if (data.complaints.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7">No complaints found.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="7" class="loading-text">No complaints found.</td></tr>';
                 } else {
                     data.complaints.forEach(complaint => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${complaint._id}</td>
                             <td>${complaint.title}</td>
-                            <td>${complaint.submittedBy ? complaint.submittedBy.username : 'N/A'}</td>
+                            <td>${complaint.user ? complaint.user.username : 'Anonymous'}</td> <!-- Use complaint.user.username -->
                             <td>${new Date(complaint.createdAt).toLocaleDateString()}</td>
                             <td><span class="status-badge ${complaint.status}">${complaint.status}</span></td>
-                            <td><span class="status-badge ${complaint.priority}">${complaint.priority}</span></td>
+                            <td><span class="status-badge ${complaint.priority || 'N/A'}">${complaint.priority || 'N/A'}</span></td> <!-- Display priority or N/A -->
                             <td>
                                 <button class="btn-sm btn-edit" data-id="${complaint._id}">View</button>
                                 <button class="btn-sm btn-delete" data-id="${complaint._id}">Delete</button>
@@ -257,18 +324,45 @@ export async function loadComplaints(page = 1, statusFilter = 'all', priorityFil
                     });
                 }
             } else {
-                tableBody.innerHTML = '<tr><td colspan="7">Error: Complaints data is missing or invalid.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="7" class="loading-text">Error: Complaints data is missing or invalid.</td></tr>';
                 console.warn('Complaints data is missing or not an array.');
             }
         } else {
             console.warn('Complaints table body element not found.');
         }
 
+        // Pagination logic for complaints table
+        const paginationContainer = document.getElementById('complaints-pagination-container');
+        if (paginationContainer && data.totalPages && data.currentPage) {
+            paginationContainer.innerHTML = '';
+            // Previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = 'Previous';
+            prevBtn.className = 'btn-pagination';
+            prevBtn.disabled = data.currentPage === 1;
+            prevBtn.addEventListener('click', () => loadComplaints(data.currentPage - 1, statusFilter, priorityFilter));
+            paginationContainer.appendChild(prevBtn);
+
+            // Page info
+            const pageInfo = document.createElement('span');
+            pageInfo.className = 'page-info';
+            pageInfo.textContent = `Page ${data.currentPage} of ${data.totalPages}`;
+            paginationContainer.appendChild(pageInfo);
+
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Next';
+            nextBtn.className = 'btn-pagination';
+            nextBtn.disabled = data.currentPage === data.totalPages;
+            nextBtn.addEventListener('click', () => loadComplaints(data.currentPage + 1, statusFilter, priorityFilter));
+            paginationContainer.appendChild(nextBtn);
+        }
+
     } catch (error) {
         console.error('Error loading complaints:', error);
         const tableBody = document.getElementById('complaints-table-body');
         if (tableBody) {
-            tableBody.innerHTML = `<tr><td colspan="7" style="color: red;">Error loading complaints: ${error.message}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7" class="loading-text" style="color: red;">Error loading complaints: ${error.message}</td></tr>`;
         }
     }
 }

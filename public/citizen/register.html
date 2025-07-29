@@ -3,58 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Citizen Registration</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Citizen Register</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="header-placeholder"></div>
-    
-    <div class="citizen-container">
-        <div id="sidebar-placeholder"></div>
-        
-        <main class="citizen-main-content">
-            <div class="auth-card card animated-fade-in-up">
-                <div class="auth-header">
-                    <h2><i class="fas fa-user-plus"></i> Citizen Registration</h2>
-                    <p>Create a new citizen account</p>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2 class="auth-title">Citizen Register</h2>
+            <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="fullName">Full Name</label>
+                    <input type="text" id="fullName" name="fullName" class="form-control" required>
                 </div>
-                <form id="registerForm" class="auth-form">
-                    <div class="form-group">
-                        <label for="fullName">Full Name</label>
-                        <input type="text" id="fullName" name="fullName" required class="form-control" placeholder="Enter your full name">
-                    </div>
-                    <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" name="username" required class="form-control" placeholder="Choose a username">
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" required class="form-control" placeholder="Enter your email">
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required class="form-control" placeholder="Create a password">
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-user-check"></i> Register</button>
-                    </div>
-                </form>
-                <div class="auth-footer">
-                    <p>Already have an account? <a href="/citizen/login.html">Login here</a></p>
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" class="form-control" required>
                 </div>
-            </div>
-        </main>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Register</button>
+            </form>
+            <div id="message" class="auth-message"></div>
+            <p class="auth-link">Already have an account? <a href="/citizen/login.html">Login here</a></p>
+        </div>
     </div>
-    
     <div id="footer-placeholder"></div>
-    
-    <!-- IMPORTANT: All scripts that use 'import' or 'export' MUST have type="module" -->
-    <!-- Use absolute paths for all scripts -->
-    <script src="/public/js/shared.js" type="module"></script>
     <script src="js/auth.js" type="module"></script>
-    <!-- Corrected: Link to register-init.js -->
     <script src="js/register.js" type="module"></script>
 </body>
 </html>

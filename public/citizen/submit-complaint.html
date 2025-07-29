@@ -16,7 +16,6 @@
         
         <main class="citizen-main-content centered-content">
             <div class="auth-card card animated-fade-in-up wide-card">
-                <button onclick="window.history.back()" class="btn btn-back-custom"><i class="fas fa-arrow-left"></i> Back</button>
                 <div class="auth-header">
                     <h2><i class="fas fa-edit"></i> Submit a Complaint</h2>
                     <p>Tell us about your concern</p>
@@ -74,11 +73,10 @@
         </main>
     </div>
     
-    <div id="footer-placeholder"></div>
-    
     <!-- IMPORTANT: All scripts that use 'import' or 'export' MUST have type="module" -->
-    <script src="/public/js/shared.js" type="module"></script>
-    <script src="/js/complaints.js" type="module"></script>
+    <!-- Corrected: Removed /public/ from the path -->
+    <script src="/js/shared.js" type="module"></script>
+    <script src="js/complaints.js" type="module"></script>
     <!-- Link to the new external initialization script for this page -->
     <script src="js/submit-complaint-init.js" type="module"></script>
 </body>
