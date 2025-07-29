@@ -1,52 +1,78 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const userRoutes = require('./routes/userRoutes');
-const complaintRoutes = require('./routes/complaintRoutes');
-const { protect } = require('./middleware/authMiddleware');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+const connectDB = require('./config/db');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const morgan = require('morgan');
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+const securityMiddleware = require('./middleware/security');
+const expressRateLimit = require('express-rate-limit');
 
 const app = express();
+
+connectDB();
+
+securityMiddleware(app);
+
+app.use(morgan('dev'));
+
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Corrected: Mount citizen user routes at /api/citizen to match auth.js
+app.use('/api/citizen', require('./routes/userRoutes')); 
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/complaints', require('./routes/complaintRoutes'));
+
+app.get(['/', '/login', '/register'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/admin/dashboard.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin', 'dashboard.html'));
+});
+app.get('/admin/manage-users.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin', 'manage-users.html'));
+});
+app.get('/admin/manage-complaints.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin', 'manage-complaints.html'));
+});
+app.get('/admin/reports.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin', 'reports.html'));
+});
+app.get('/admin/settings.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin', 'settings.html'));
+});
+app.get('/admin/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin', 'login.html'));
+});
+app.get('/admin/register.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin', 'register.html'));
+});
+
+// Specific routes for citizen HTML pages
+app.get('/citizen/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'citizen', 'login.html'));
+});
+app.get('/citizen/register.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'citizen', 'register.html'));
+});
+
+
+app.use(notFound);
+app.use(errorHandler);
+
+exports.authLimiter = expressRateLimit({
+  windowMs: 2 * 60 * 60 * 1000,
+  max: 1000,
+  message: 'Too many login attempts, please try again later'
+});
+
+
 const PORT = process.env.PORT || 5000;
-
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.error('MongoDB connection error:', err));
-
-app.use(cors());
-app.use(express.json());
-app.use(helmet());
-app.use(rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    standardHeaders: true,
-    legacyHeaders: false,
-}));
-
-// Serve static files from the 'public' directory
-// This line tells Express to look for static files (like HTML, CSS, JS)
-// inside the 'public' folder. When a request comes in, it will try to
-// match the path to a file in this directory.
-app.use(express.static('public'));
-
-app.use('/api/users', userRoutes);
-app.use('/api/complaints', protect, complaintRoutes);
-
-// Global error handler
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(err.status || 500).json({
-        message: err.message || 'Internal Server Error',
-        error: process.env.NODE_ENV === 'production' ? undefined : err.stack,
-    });
-});
-
-app.get('/', (req, res) => {
-    res.send('LGCMS API is running...');
-});
-
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });

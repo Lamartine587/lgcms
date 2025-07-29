@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Optional: Font Awesome for icons if you want to use them -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card card"> <!-- Added 'card' class for consistent styling -->
+            <div class="auth-header">
+                <h2><i class="fas fa-lock"></i> Admin Login</h2>
+                <p>Access the administration panel</p>
+            </div>
+
+            <form id="adminLoginForm" class="auth-form" method="post">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required class="form-control" placeholder="Enter your email"> <!-- Added 'form-control' class -->
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required class="form-control" placeholder="Enter your password"> <!-- Added 'form-control' class -->
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Login</button> <!-- Added 'btn' class -->
+                    <a href="/admin/forgot-password" class="forgot-password">Forgot Password?</a>
+                </div>
+            </form>
+
+            <div class="auth-footer">
+                <p>Don't have an account? <a href="/admin/register.html">Register here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPORTANT: All scripts that use 'import' or 'export' MUST have type="module" -->
+    <script src="js/auth.js" type="module"></script>
+    <script src="js/admin-login.js" type="module"></script> <!-- Corrected path and added type="module" -->
+</body>
+</html>

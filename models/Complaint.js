@@ -1,53 +1,25 @@
+// models/Complaint.js
 const mongoose = require('mongoose');
 
-const complaintSchema = mongoose.Schema(
-    {
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            required: true,
-            ref: 'User',
-        },
-        title: {
-            type: String,
-            required: true,
-        },
-        description: {
-            type: String,
-            required: true,
-        },
-        status: {
-            type: String,
-            required: true,
-            default: 'Pending',
-            enum: ['Pending', 'In Progress', 'Resolved', 'Rejected'],
-        },
-        // New fields for evidence
-        evidenceImages: [
-            {
-                type: String, // Stores URL to the image
-            },
-        ],
-        evidenceVideos: [
-            {
-                type: String, // Stores URL to the video
-            },
-        ],
-        evidencePdfs: [
-            {
-                type: String, // Stores URL to the PDF
-            },
-        ],
-        // New field for admin feedback
-        adminFeedback: {
-            type: String,
-            required: false, // Admin feedback is optional
-        },
+const complaintSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    category: { type: String, required: true },
+    status: { 
+        type: String, 
+        enum: ['pending', 'in_progress', 'resolved'], 
+        default: 'pending' 
     },
-    {
-        timestamps: true,
-    }
-);
+    response: { type: String },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+});
 
-const Complaint = mongoose.model('Complaint', complaintSchema);
+// Update the updatedAt field before saving
+complaintSchema.pre('save', function(next) {
+    this.updatedAt = Date.now();
+    next();
+});
 
-module.exports = Complaint;
+module.exports = mongoose.model('Complaint', complaintSchema);

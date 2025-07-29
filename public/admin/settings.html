@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Settings</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Optional: Font Awesome for icons if you want to use them -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="header-container"></div>
+    
+    <div class="admin-container">
+        <div id="sidebar-container"></div>
+        
+        <main class="admin-main">
+            <header class="page-header">
+                <h1><i class="fas fa-cogs"></i> System Settings</h1>
+                <p>Configure system-wide preferences and security options.</p>
+            </header>
+            
+            <section class="settings-section card">
+                <div class="settings-tabs-container">
+                    <button class="tab-btn active" data-tab="general"><i class="fas fa-sliders-h"></i> General</button>
+                    <button class="tab-btn" data-tab="security"><i class="fas fa-shield-alt"></i> Security</button>
+                    <button class="tab-btn" data-tab="notifications"><i class="fas fa-bell"></i> Notifications</button>
+                </div>
+                
+                <div id="general" class="tab-content active">
+                    <h2>General Settings</h2>
+                    <form id="general-settings" class="settings-form">
+                        <div class="form-group">
+                            <label for="system_name">System Name</label>
+                            <input type="text" id="system_name" name="system_name" required class="form-control" placeholder="e.g., LGCMS">
+                        </div>
+                        <div class="form-group">
+                            <label for="default_role">Default User Role</label>
+                            <select id="default_role" name="default_role" class="form-control">
+                                <option value="citizen">Citizen</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save General Settings</button>
+                    </form>
+                </div>
+                
+                <div id="security" class="tab-content">
+                    <h2>Security Settings</h2>
+                    <form id="security-settings" class="settings-form">
+                        <div class="form-group">
+                            <label for="password_min_length">Minimum Password Length</label>
+                            <input type="number" id="password_min_length" name="password_min_length" min="8" max="32" value="8" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="enable_2fa">Enable Two-Factor Authentication</label>
+                            <input type="checkbox" id="enable_2fa" name="enable_2fa" class="form-check-input">
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Security Settings</button>
+                    </form>
+                </div>
+                
+                <div id="notifications" class="tab-content">
+                    <h2>Notification Settings</h2>
+                    <form id="notification-settings" class="settings-form">
+                        <div class="form-group">
+                            <label for="email_notifications">Enable Email Notifications</label>
+                            <input type="checkbox" id="email_notifications" name="email_notifications" checked class="form-check-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="sms_notifications">Enable SMS Notifications</label>
+                            <input type="checkbox" id="sms_notifications" name="sms_notifications" class="form-check-input">
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Notification Settings</button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <div id="footer-container"></div>
+    
+    <!-- IMPORTANT: All scripts that use 'import' or 'export' MUST have type="module" -->
+    <script src="js/shared.js" type="module"></script>
+    <script src="js/admin.js" type="module"></script>
+    <!-- Keeping the original JS link as requested -->
+    <script src="js/setting.js" type="module"></script>
+</body>
+</html>

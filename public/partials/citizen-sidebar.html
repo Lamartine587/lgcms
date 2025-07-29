@@ -1,40 +1,21 @@
-<nav class="citizen-sidebar" style="background: var(--kenya-black); color: var(--kenya-white); width: 220px; min-height: 100vh; display: flex; flex-direction: column; padding: 2rem 1rem; position: fixed; left: 0; top: 0; z-index: 100; box-shadow: 2px 0 12px rgba(0,0,0,0.08);">
-    <div style="font-size: 1.5rem; font-weight: 900; color: var(--kenya-green); margin-bottom: 2rem; text-align: center; letter-spacing: 0.05em;">
-        <i class="fas fa-leaf"></i> LGCMS
+<nav class="citizen-sidebar">
+    <div class="sidebar-logo">
+        <i class="fas fa-bank"></i> LGCMS
     </div>
-    <a href="/index.html" class="sidebar-link" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: 600; margin-bottom: 0.5rem; transition: background 0.2s;">
+    <a href="/index.html" class="sidebar-link">
         <i class="fas fa-home"></i> Home
     </a>
-    <a href="/citizen/dashboard.html" class="sidebar-link" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: 600; margin-bottom: 0.5rem; transition: background 0.2s;">
+    <a href="/citizen/dashboard.html" class="sidebar-link">
         <i class="fas fa-tachometer-alt"></i> Dashboard
     </a>
-    <a href="/citizen/submit-complaint.html" class="sidebar-link" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: 600; margin-bottom: 0.5rem; transition: background 0.2s;">
+    <a href="/citizen/submit-complaint.html" class="sidebar-link">
         <i class="fas fa-plus-circle"></i> Submit Complaint
     </a>
-    <a href="/citizen/my-complaints.html" class="sidebar-link" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: 600; margin-bottom: 0.5rem; transition: background 0.2s;">
+    <a href="/citizen/my-complaints.html" class="sidebar-link">
         <i class="fas fa-list-alt"></i> My Complaints
     </a>
-    <a href="/citizen/profile.html" class="sidebar-link" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: 600; margin-bottom: 0.5rem; transition: background 0.2s;">
-        <i class="fas fa-user-circle"></i> Profile
-    </a>
-    <button id="sidebarLogout" class="btn" style="margin-top: auto; background: var(--kenya-red); color: var(--kenya-white); width: 100%; display: flex; align-items: center; gap: 0.75rem; justify-content: center;">
+    <!-- Profile link removed as requested -->
+    <button id="sidebarLogout" class="btn sidebar-logout-btn">
         <i class="fas fa-sign-out-alt"></i> Logout
     </button>
 </nav>
-<style>
-.citizen-sidebar .sidebar-link:hover, .citizen-sidebar .sidebar-link:focus {
-    background: var(--kenya-green);
-    color: var(--kenya-white);
-    text-decoration: none;
-}
-@media (max-width: 900px) {
-    .citizen-sidebar {
-        position: fixed;
-        left: -220px;
-        transition: left 0.3s;
-    }
-    .citizen-sidebar.open {
-        left: 0;
-    }
-}
-</style> 

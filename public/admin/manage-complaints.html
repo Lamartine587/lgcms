@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Complaints</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Optional: Font Awesome for icons if you want to use them -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="header-container"></div>
+    
+    <div class="admin-container">
+        <div id="sidebar-container"></div>
+        
+        <main class="admin-main">
+            <header class="page-header">
+                <h1><i class="fas fa-headset"></i> Complaints Management</h1>
+                <p>Overview and management of all submitted complaints.</p>
+            </header>
+            
+            <section class="filter-section card">
+                <div class="filter-controls-grid">
+                    <div class="form-group">
+                        <label for="status-filter">Filter by Status:</label>
+                        <select id="status-filter" class="form-control">
+                            <option value="all">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="priority-filter">Filter by Priority:</label>
+                        <select id="priority-filter" class="form-control">
+                            <option value="all">All Priorities</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="search-complaints">Search Complaints:</label>
+                        <input type="text" id="search-complaints" placeholder="Search by ID or Title..." class="form-control">
+                    </div>
+
+                    <div class="filter-actions">
+                        <button id="apply-filters" class="btn btn-primary"><i class="fas fa-filter"></i> Apply Filters</button>
+                        <button id="clear-filters" class="btn btn-outline"><i class="fas fa-times"></i> Clear Filters</button>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="complaints-list-section card">
+                <h2>All Complaints</h2>
+                <div class="table-responsive">
+                    <table class="data-table styled-table">
+                        <thead>
+                            <tr>
+                                <th>Complaint ID</th>
+                                <th>Title</th>
+                                <th>Submitted By</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="complaints-table-body">
+                            <!-- Complaints will be loaded here via JavaScript -->
+                            <tr><td colspan="7" class="loading-text">Loading complaints...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="complaints-pagination-container" class="pagination-controls">
+                    <!-- Pagination buttons will be loaded here by JavaScript -->
+                    <button id="prev-page" class="btn-pagination"><i class="fas fa-chevron-left"></i> Previous</button>
+                    <span id="page-info" class="page-info">Page 1 of 1</span>
+                    <button id="next-page" class="btn-pagination">Next <i class="fas fa-chevron-right"></i></button>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <div id="footer-container"></div>
+    
+    <!-- IMPORTANT: All scripts that use 'import' or 'export' MUST have type="module" -->
+    <script src="js/shared.js" type="module"></script>
+    <script src="js/admin.js" type="module"></script>
+    <script src="js/complaints.js" type="module"></script>
+</body>
+</html>

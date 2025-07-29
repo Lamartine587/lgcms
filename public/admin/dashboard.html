@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Optional: Font Awesome for icons if you want to use them -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js CDN link removed as per your request -->
+</head>
+<body>
+    <!-- Include common header -->
+    <div id="header-container"></div>
+    
+    <div class="admin-container">
+        <!-- Include sidebar -->
+        <div id="sidebar-container"></div>
+        
+        <main class="admin-main">
+            <header class="dashboard-header">
+                <h1><i class="fas fa-tachometer-alt"></i> Overview Dashboard</h1>
+                <p>Welcome back, Admin! Here's a quick look at your system's performance.</p>
+            </header>
+
+            <section class="quick-actions-section card">
+                <h2>Quick Actions</h2>
+                <div class="quick-actions-grid">
+                    <button class="btn btn-primary"><i class="fas fa-user-plus"></i> Add New User</button>
+                    <button class="btn btn-secondary"><i class="fas fa-file-alt"></i> View Complaints</button>
+                    <button class="btn btn-outline"><i class="fas fa-chart-line"></i> Generate Report</button>
+                    <button class="btn btn-primary"><i class="fas fa-cogs"></i> System Settings</button>
+                </div>
+            </section>
+            
+            <section class="stats-section">
+                <h2>Key Metrics</h2>
+                <div class="stats-cards-grid">
+                    <div class="stat-card card">
+                        <div class="stat-card-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-card-content">
+                            <h3>Total Users</h3>
+                            <p id="total-users" class="stat-value">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card">
+                        <div class="stat-card-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="stat-card-content">
+                            <h3>Active Complaints</h3>
+                            <p id="active-complaints" class="stat-value">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card">
+                        <div class="stat-card-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-card-content">
+                            <h3>Resolved Cases</h3>
+                            <p id="resolved-cases" class="stat-value">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card card">
+                        <div class="stat-card-icon"><i class="fas fa-calendar-alt"></i></div>
+                        <div class="stat-card-content">
+                            <h3>Today's Activity</h3>
+                            <p id="today-activity" class="stat-value">0</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="recent-activity-section">
+                <h2>Recent Activity Log</h2>
+                <div id="activity-list" class="activity-log-list card">
+                    <p class="loading-text">Loading recent activity...</p>
+                </div>
+            </section>
+
+            <section class="charts-section">
+                <h2>Visualizations</h2>
+                <div class="charts-grid">
+                    <div class="chart-card card">
+                        <h3>Complaint Status</h3>
+                        <canvas id="complaintsChart"></canvas>
+                    </div>
+                    <div class="chart-card card">
+                        <h3>User Roles</h3>
+                        <canvas id="usersChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Include common footer -->
+    <div id="footer-container"></div>
+    
+    <!-- IMPORTANT: All scripts that use 'import' or 'export' MUST have type="module" -->
+    <!-- The order here matters: shared.js and admin.js must be loaded before dashboard-init.js -->
+    <script src="js/shared.js" type="module"></script>
+    <script src="js/admin.js" type="module"></script>
+    <script src="js/dashboard.js" type="module"></script>
+</body>
+</html>

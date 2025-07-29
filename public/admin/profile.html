@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Profile</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="header-container"></div>
+    
+    <div class="admin-container">
+        <div id="sidebar-container"></div>
+        
+        <main class="admin-main">
+            <h1>Admin Profile</h1>
+            
+            <div class="profile-container">
+                <div class="profile-header">
+                    <div class="avatar-upload">
+                        <img id="profile-avatar" src="/images/default-avatar.jpg" alt="Profile Avatar">
+                        <label for="avatar-input" class="upload-label">
+                            <i class="fas fa-camera"></i> Change Photo
+                        </label>
+                        <input type="file" id="avatar-input" accept="image/*">
+                    </div>
+                    <h2 id="admin-name">Loading...</h2>
+                    <p id="admin-role" class="role-badge">Admin</p>
+                </div>
+                
+                <form id="profile-form" class="profile-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="full-name">Full Name</label>
+                            <input type="text" id="full-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone</label>
+                            <input type="tel" id="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="department">Department</label>
+                            <input type="text" id="department">
+                        </div>
+                        <div class="form-group">
+                            <label for="bio">Bio</label>
+                            <textarea id="bio" rows="3"></textarea>
+                        </div>
+                    </div>
+                    
+                    <h3>Change Password</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="current-password">Current Password</label>
+                            <input type="password" id="current-password">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">New Password</label>
+                            <input type="password" id="new-password">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Confirm Password</label>
+                            <input type="password" id="confirm-password">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </main>
+    </div>
+    
+    <div id="footer-container"></div>
+    
+    <script src="/js/shared.js"></script>
+    <script src="/js/admin/profile.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHeader();
+            loadSidebar();
+            loadFooter();
+            loadAdminProfile();
+        });
+    </script>
+</body>
+</html>
