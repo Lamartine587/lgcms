@@ -1,0 +1,116 @@
+/* Admin dashboard specific styles */
+.dashboard-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-left: 4px solid #2563eb; /* Blue for Kakamega County */
+}
+
+.dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-card h2 {
+  color: #1f2937; /* Dark gray */
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+header {
+  background: linear-gradient(to right, #2563eb, #1e40af);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+}
+
+aside nav a, aside nav button {
+  transition: background-color 0.2s ease;
+}
+
+aside nav a:hover, aside nav button:hover {
+  background-color: #1e40af;
+}
+
+ul#recent-activity li {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.2s ease;
+  border-radius: 0.25rem;
+}
+
+ul#recent-activity li:hover {
+  background-color: #f9fafb;
+}
+
+ul#recent-activity li::before {
+  content: '\f054'; /* FontAwesome chevron-right */
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  color: #2563eb;
+  margin-right: 0.75rem;
+  font-size: 0.9rem;
+}
+
+/* Loading state */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.dashboard-card.loading {
+  animation: pulse 1.5s infinite;
+  background: #f3f4f6;
+}
+
+.dashboard-card.loading p,
+.dashboard-card.loading canvas,
+.dashboard-card.loading h2 {
+  opacity: 0.5;
+}
+
+/* Sidebar toggle */
+#sidebar-toggle:hover {
+  color: #16a34a; /* Green accent for hover */
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .grid-cols-4, .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  header {
+    padding: 0.75rem;
+  }
+
+  header h1 {
+    font-size: 1.25rem;
+  }
+
+  .dashboard-card {
+    padding: 1rem;
+  }
+
+  .dashboard-card p.text-3xl {
+    font-size: 1.75rem;
+  }
+}

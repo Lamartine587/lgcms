@@ -1,0 +1,121 @@
+/* Base styles for all pages */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f3f4f6;
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.card {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #1e40af;
+  transform: translateY(-1px);
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 0.25rem;
+  margin-bottom: 1rem;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.alert-error {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  color: white;
+  text-align: center;
+  padding: 2rem 0;
+  border-bottom: 4px solid #1e40af;
+}
+
+/* Portal Cards */
+.portal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.portal-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.portal-card i {
+  color: #2563eb;
+  margin-bottom: 1rem;
+}
+
+/* Footer */
+footer {
+  background-color: #1f2937;
+  color: #d1d5db;
+  padding: 1.5rem 0;
+  font-size: 0.9rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 1.5rem 0;
+  }
+  
+  .hero-section h1 {
+    font-size: 2rem;
+  }
+  
+  .hero-section p {
+    font-size: 1rem;
+  }
+  
+  .portal-card {
+    padding: 1.5rem;
+  }
+}

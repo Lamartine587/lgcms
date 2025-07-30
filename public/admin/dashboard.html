@@ -1,130 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="/css/style.css">
-    <!-- Optional: Font Awesome for icons if you want to use them -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Kakamega County</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/shared/base.css">
+  <link rel="stylesheet" href="/assets/css/admin/dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 </head>
-<body>
-    <!-- Include common header -->
-    <div id="header-container"></div>
-    
-    <div class="admin-container">
-        <!-- Include sidebar -->
-        <div id="sidebar-container"></div>
-        
-        <main class="admin-main">
-            <header class="dashboard-header">
-                <h1><i class="fas fa-tachometer-alt"></i> Overview Dashboard</h1>
-                <p>Welcome back, Admin! Here's a quick look at your system's performance.</p>
-            </header>
-
-            <section class="quick-actions-section card">
-                <h2>Quick Actions</h2>
-                <div class="quick-actions-grid">
-                    <button class="btn btn-primary"><i class="fas fa-user-plus"></i> Add New User</button>
-                    <button class="btn btn-secondary"><i class="fas fa-file-alt"></i> View Complaints</button>
-                    <button class="btn btn-outline"><i class="fas fa-chart-line"></i> Generate Report</button>
-                    <button class="btn btn-primary"><i class="fas fa-cogs"></i> System Settings</button>
-                </div>
-            </section>
-            
-            <section class="stats-section">
-                <h2>Key Metrics</h2>
-                <div class="stats-cards-grid">
-                    <div class="stat-card card">
-                        <div class="stat-card-icon"><i class="fas fa-users"></i></div>
-                        <div class="stat-card-content">
-                            <h3>Total Users</h3>
-                            <p id="total-users" class="stat-value">0</p>
-                        </div>
-                    </div>
-                    <div class="stat-card card">
-                        <div class="stat-card-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                        <div class="stat-card-content">
-                            <h3>Active Complaints</h3>
-                            <p id="active-complaints" class="stat-value">0</p>
-                        </div>
-                    </div>
-                    <div class="stat-card card">
-                        <div class="stat-card-icon"><i class="fas fa-check-circle"></i></div>
-                        <div class="stat-card-content">
-                            <h3>Resolved Cases</h3>
-                            <p id="resolved-cases" class="stat-value">0</p>
-                        </div>
-                    </div>
-                    <div class="stat-card card">
-                        <div class="stat-card-icon"><i class="fas fa-calendar-alt"></i></div>
-                        <div class="stat-card-content">
-                            <h3>Today's Activity</h3>
-                            <p id="today-activity" class="stat-value">0</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            
-            <section class="recent-activity-section">
-                <h2>Recent Activity Log</h2>
-                <div id="activity-list" class="activity-log-list card">
-                    <p class="loading-text">Loading recent activity...</p>
-                </div>
-            </section>
-
-            <section class="charts-section">
-                <h2>Visualizations & Predictions</h2> <!-- Updated title -->
-                <div class="charts-grid">
-                    <div class="chart-card card">
-                        <h3>Complaint Status Distribution</h3>
-                        <div id="complaint-status-chart-container" class="chart-image-container">
-                            <p class="loading-text">Loading chart...</p>
-                            <img id="complaint-status-chart" src="" alt="Complaint Status Distribution" style="width:100%; height:auto; display:none;">
-                        </div>
-                    </div>
-                    <div class="chart-card card">
-                        <h3>Complaints Over Time</h3>
-                        <div id="complaint-trends-chart-container" class="chart-image-container">
-                            <p class="loading-text">Loading chart...</p>
-                            <img id="complaint-trends-chart" src="" alt="Complaints Over Time" style="width:100%; height:auto; display:none;">
-                        </div>
-                    </div>
-                    <div class="chart-card card">
-                        <h3>User Role Distribution</h3>
-                        <div id="user-role-chart-container" class="chart-image-container">
-                            <p class="loading-text">Loading chart...</p>
-                            <img id="user-role-chart" src="" alt="User Role Distribution" style="width:100%; height:auto; display:none;">
-                        </div>
-                    </div>
-                    <div class="chart-card card">
-                        <h3>Predict Complaint Resolution Time</h3>
-                        <div id="prediction-section">
-                            <div class="form-group">
-                                <label for="desc_length">Description Length (words)</label>
-                                <input type="number" id="desc_length" class="form-control" value="100" min="0">
-                            </div>
-                            <div class="form-group">
-                                <label for="num_evidence">Number of Evidence Files</label>
-                                <input type="number" id="num_evidence" class="form-control" value="1" min="0">
-                            </div>
-                            <button id="predict-btn" class="btn btn-primary btn-small"><i class="fas fa-magic"></i> Predict</button>
-                            <p id="prediction-result" class="form-text-muted" style="margin-top: 1rem; font-weight: 600;"></p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-    
-    <!-- Include common footer -->
-    <div id="footer-container"></div>
-    
-    <!-- IMPORTANT: All scripts that use 'import' or 'export' MUST have type="module" -->
-    <!-- The order here matters: shared.js and admin.js must be loaded before dashboard-init.js -->
-    <script src="js/shared.js" type="module"></script>
-    <script src="js/admin.js" type="module"></script>
-    <!-- Correctly link dashboard-init.js and load as a module -->
-    <script src="js/dashboard.js" type="module"></script>
+<body class="bg-gray-100">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="bg-gradient-to-b from-blue-800 to-blue-600 text-white w-64 fixed top-0 bottom-0 p-4 transform transition-transform duration-300 ease-in-out lg:translate-x-0 -translate-x-full">
+      <div class="flex items-center mb-6">
+        <img src="/assets/images/kakamega-logo.png" alt="Kakamega County Logo" class="h-8 mr-2">
+        <h2 class="text-xl font-bold">Kakamega CMS</h2>
+      </div>
+      <nav class="space-y-2">
+        <a href="/admin/dashboard.html" class="flex items-center p-2 bg-blue-700 rounded hover:bg-blue-900" aria-label="Dashboard">
+          <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+        </a>
+        <a href="/admin/users.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="Manage Users">
+          <i class="fas fa-users mr-2"></i> Users
+        </a>
+        <a href="/admin/analytics.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="View Analytics">
+          <i class="fas fa-chart-bar mr-2"></i> Analytics
+        </a>
+        <a href="/admin/complaints.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="Manage Complaints">
+          <i class="fas fa-exclamation-circle mr-2"></i> Complaints
+        </a>
+        <a href="/admin/settings.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="Settings">
+          <i class="fas fa-cog mr-2"></i> Settings
+        </a>
+        <button onclick="generateInviteCode()" class="flex items-center p-2 w-full text-left hover:bg-blue-900 rounded" aria-label="Generate Invite Code">
+          <i class="fas fa-key mr-2"></i> Invite Code
+        </button>
+        <button onclick="logout('admin', '/admin/login.html')" class="flex items-center p-2 w-full text-left hover:bg-blue-900 rounded" aria-label="Logout">
+          <i class="fas fa-sign-out-alt mr-2"></i> Logout
+        </button>
+      </nav>
+    </aside>
+    <!-- Main Content -->
+    <main class="flex-1 p-4 lg:ml-64">
+      <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-4 rounded-lg shadow-lg mb-8 flex justify-between items-center">
+        <button id="sidebar-toggle" class="lg:hidden p-2 text-white focus:outline-none" aria-label="Toggle Sidebar">
+          <i class="fas fa-bars text-2xl"></i>
+        </button>
+        <h1 class="text-2xl font-bold flex items-center">
+          <i class="fas fa-tachometer-alt mr-2"></i> Admin Dashboard
+        </h1>
+      </header>
+      <div class="container">
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div class="card dashboard-card">
+            <h2 class="text-lg font-semibold flex items-center">
+              <i class="fas fa-users text-blue-600 mr-2"></i> Total Users
+            </h2>
+            <p id="total-users" class="text-3xl font-bold text-blue-600" aria-live="polite">0</p>
+          </div>
+          <div class="card dashboard-card">
+            <h2 class="text-lg font-semibold flex items-center">
+              <i class="fas fa-exclamation-circle text-blue-600 mr-2"></i> Active Complaints
+            </h2>
+            <p id="active-complaints" class="text-3xl font-bold text-blue-600" aria-live="polite">0</p>
+          </div>
+          <div class="card dashboard-card">
+            <h2 class="text-lg font-semibold flex items-center">
+              <i class="fas fa-check-circle text-blue-600 mr-2"></i> Resolved Cases
+            </h2>
+            <p id="resolved-cases" class="text-3xl font-bold text-blue-600" aria-live="polite">0</p>
+          </div>
+          <div class="card dashboard-card">
+            <h2 class="text-lg font-semibold flex items-center">
+              <i class="fas fa-clock text-blue-600 mr-2"></i> Avg Resolution Time
+            </h2>
+            <p id="avg-resolution-time" class="text-3xl font-bold text-blue-600" aria-live="polite">0 hrs</p>
+          </div>
+        </div>
+        <!-- Charts and Activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="card dashboard-card">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+              <i class="fas fa-chart-pie text-blue-600 mr-2"></i> Complaint Status Distribution
+            </h2>
+            <canvas id="status-chart" aria-label="Complaint Status Distribution Chart"></canvas>
+          </div>
+          <div class="card dashboard-card">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+              <i class="fas fa-chart-line text-blue-600 mr-2"></i> Complaint Trends
+            </h2>
+            <canvas id="trends-chart" aria-label="Complaint Trends Chart"></canvas>
+          </div>
+          <div class="card dashboard-card">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+              <i class="fas fa-building text-blue-600 mr-2"></i> Department Distribution
+            </h2>
+            <canvas id="department-chart" aria-label="Department Distribution Chart"></canvas>
+          </div>
+          <div class="card dashboard-card">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+              <i class="fas fa-history text-blue-600 mr-2"></i> Recent Activity
+            </h2>
+            <ul id="recent-activity" class="space-y-3" aria-live="polite"></ul>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="bg-gray-800 text-white text-center py-4">
+    <p>&copy; 2025 Kakamega County Complaint Management System. All rights reserved.</p>
+  </footer>
+  <script src="/assets/js/shared/api.js"></script>
+  <script src="/assets/js/shared/auth.js"></script>
+  <script src="/assets/js/shared/utils.js"></script>
+  <script src="/assets/js/admin/dashboard.js"></script>
 </body>
 </html>

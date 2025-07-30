@@ -1,0 +1,9 @@
+/* Admin complaints page styles */
+table th, table td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+}
+
+select {
+  min-width: 150px;
+}

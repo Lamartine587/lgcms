@@ -1,49 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Citizen Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="/css/style.css"> <!-- Absolute path for main CSS -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citizen Login</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/shared/base.css">
+  <link rel="stylesheet" href="/assets/css/shared/auth.css">
 </head>
 <body>
-    <div id="header-placeholder"></div>
-    
-    <div class="citizen-container"> <!-- Use a container for citizen pages -->
-        <div id="sidebar-placeholder"></div> <!-- Placeholder for citizen sidebar -->
-        
-        <main class="citizen-main-content"> <!-- Main content area for citizen pages -->
-            <div class="auth-card card animated-fade-in-up"> 
-                <div class="auth-header">
-                    <h2><i class="fas fa-user-circle"></i> Citizen Login</h2>
-                    <p>Access your citizen portal</p>
-                </div>
-                <form id="loginForm" class="auth-form">
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" required class="form-control" placeholder="Enter your email">
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required class="form-control" placeholder="Enter your password">
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Login</button>
-                        <a href="/citizen/forgot-password.html" class="forgot-password">Forgot Password?</a>
-                    </div>
-                </form>
-                <div id="message" class="auth-message"></div> <!-- Added div for messages -->
-                <div class="auth-footer">
-                    <p>Don't have an account? <a href="/citizen/register.html">Register here</a></p>
-                </div>
-            </div>
-        </main>
+  <div class="auth-container">
+    <div class="auth-card">
+      <h2>Citizen Login</h2>
+      <form id="login-form">
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button type="submit" class="btn btn-primary">Login</button>
+      </form>
+      <p class="mt-4 text-center">
+        Need an account? <a href="/citizen/register.html" class="text-blue-600">Register</a> |
+        <a href="/citizen/anonymous-complaint.html" class="text-blue-600">Submit Anonymous Complaint</a>
+      </p>
     </div>
-    
-    <div id="footer-placeholder"></div> 
-    <script src="js/auth.js" type="module"></script>
-    <script src="js/login.js" type="module"></script>
+  </div>
+  <script src="/assets/js/shared/api.js"></script>
+  <script src="/assets/js/shared/auth.js"></script>
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      await login(email, password, 'users', '/citizen/dashboard.html');
+    });
+  </script>
 </body>
 </html>

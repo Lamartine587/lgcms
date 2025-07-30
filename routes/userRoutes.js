@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-// Assuming you have a Complaint model. Uncomment this line if you have it.
-// const Complaint = require('../models/Complaint'); 
+const Complaint = require('../models/Complaint'); // Import Complaint model
 const { validateUserRegistration, validateLogin } = require('../utils/validation');
 const { generateToken } = require('../utils/auth');
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 const ErrorResponse = require('../utils/ErrorResponse');
+const upload = require('../utils/fileUpload'); // For avatar uploads
+const BlacklistedToken = require('../models/BlacklistedToken'); // For logout
 
 // @desc    Register a user
 // @route   POST /api/users/register
@@ -76,8 +77,8 @@ router.post('/login', validateLogin, async (req, res, next) => {
 
 // @desc    Get current user profile
 // @route   GET /api/users/me
-// @access  Private
-router.get('/me', authenticate, authorize('citizen'), async (req, res, next) => {
+// @access  Private (Citizen, Staff)
+router.get('/me', authenticate, authorize('citizen', 'staff'), async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) {
@@ -92,57 +93,95 @@ router.get('/me', authenticate, authorize('citizen'), async (req, res, next) => 
   }
 });
 
-// @desc    Get citizen dashboard statistics
-// @route   GET /api/users/dashboard-stats
-// @access  Private (Citizen)
-router.get('/dashboard-stats', authenticate, authorize('citizen'), async (req, res, next) => {
-    try {
-        const userId = req.user.id; // Get the logged-in user's ID
-
-        // Placeholder for actual data fetching:
-        // You would query your Complaint model here to get user-specific stats
-        let totalComplaints = 0;
-        let pendingComplaints = 0;
-        let resolvedComplaints = 0;
-        let recentComplaints = [];
-
-        // Example: If Complaint model exists and is imported
-        if (typeof Complaint !== 'undefined') {
-            totalComplaints = await Complaint.countDocuments({ user: userId });
-            pendingComplaints = await Complaint.countDocuments({ user: userId, status: 'Pending' });
-            resolvedComplaints = await Complaint.countDocuments({ user: userId, status: 'Resolved' });
-            
-            recentComplaints = await Complaint.find({ user: userId })
-                                            .sort({ createdAt: -1 })
-                                            .limit(5)
-                                            .select('title status createdAt');
-        } else {
-            // Dummy data if Complaint model is not available for testing
-            totalComplaints = 10;
-            pendingComplaints = 3;
-            resolvedComplaints = 7;
-            recentComplaints = [
-                { _id: 'c1', title: 'Road Pothole', status: 'Pending', createdAt: new Date(Date.now() - 86400000) },
-                { _id: 'c2', title: 'Trash Overflow', status: 'Resolved', createdAt: new Date(Date.now() - 2 * 86400000) },
-                { _id: 'c3', title: 'Streetlight Broken', status: 'In Progress', createdAt: new Date(Date.now() - 3 * 86400000) },
-            ];
-        }
-
-        res.status(200).json({
-            success: true,
-            data: {
-                totalComplaints,
-                pendingComplaints,
-                resolvedComplaints,
-                recentComplaints
-            }
-        });
-
-    } catch (err) {
-        console.error('Error fetching citizen dashboard stats:', err);
-        next(new ErrorResponse('Could not fetch citizen dashboard statistics', 500));
+// @desc    Update current user profile
+// @route   PUT /api/users/me
+// @access  Private (Citizen, Staff)
+router.put('/me', authenticate, authorize('citizen', 'staff'), upload.single('avatar'), async (req, res, next) => {
+  try {
+    const updates = {
+      fullName: req.body.fullName,
+      username: req.body.username,
+      email: req.body.email,
+    };
+    if (req.file) {
+      updates.avatar = req.file.path;
     }
+
+    const user = await User.findByIdAndUpdate(req.user.id, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!user) {
+      return next(new ErrorResponse('User not found', 404));
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        fullName: user.fullName
+      }
+    });
+  } catch (err) {
+    next(new ErrorResponse('Profile update failed', 500));
+  }
 });
 
+// @desc    Logout user
+// @route   POST /api/users/logout
+// @access  Private (Citizen, Staff)
+router.post('/logout', authenticate, authorize('citizen', 'staff'), async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies.token;
+    if (token) {
+      await BlacklistedToken.create({
+        token,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Match JWT expiry (30 days)
+      });
+    }
+    res.status(200).json({ success: true, message: 'Logged out successfully' });
+  } catch (err) {
+    next(new ErrorResponse('Logout failed', 500));
+  }
+});
+
+// @desc    Get citizen dashboard statistics
+// @route   GET /api/users/dashboard-stats
+// @access  Private (Citizen, Staff)
+router.get('/dashboard-stats', authenticate, authorize('citizen', 'staff'), async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    // Fetch complaint statistics
+    const [totalComplaints, pendingComplaints, resolvedComplaints, recentComplaints] = await Promise.all([
+      Complaint.countDocuments({ user: userId }),
+      Complaint.countDocuments({ user: userId, status: 'pending' }), // Match schema enum
+      Complaint.countDocuments({ user: userId, status: 'resolved' }), // Match schema enum
+      Complaint.find({ user: userId })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('title status createdAt')
+        .lean()
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalComplaints,
+        pendingComplaints,
+        resolvedComplaints,
+        recentComplaints
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching dashboard stats:', err);
+    next(new ErrorResponse('Could not fetch dashboard statistics', 500));
+  }
+});
 
 module.exports = router;

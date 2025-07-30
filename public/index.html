@@ -1,43 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LGCMS Home</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
-    <!-- Optional: Font Awesome for icons if you want to use them -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complaint Management System</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/shared/base.css">
+  <!-- Add FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-    <div id="header-placeholder"></div>
-    
-    <main class="main-content-area">
-        <div class="welcome-card card">
-            <h1 class="welcome-title"><i class="fas fa-handshake"></i> Welcome to LGCMS</h1>
-            <p class="welcome-text">Your platform for lodging and managing complaints efficiently.<br>We are dedicated to providing a seamless experience for all users.</p>
-            
-            <div class="portal-links-grid">
-                <a href="/citizen/submit-complaint.html" class="btn btn-primary btn-portal">
-                    <i class="fas fa-edit"></i> Submit a Complaint
-                </a>
-                <a href="/citizen/my-complaints.html" class="btn btn-secondary btn-portal">
-                    <i class="fas fa-list-alt"></i> View My Complaints
-                </a>
-                <a href="/admin/login.html" class="btn btn-dark btn-portal">
-                    <i class="fas fa-user-shield"></i> Admin Portal
-                </a>
-                <a href="/citizen/login.html" class="btn btn-outline btn-portal">
-                    <i class="fas fa-user"></i> Citizen Login
-                </a>
-            </div>
-        </div>
-    </main>
-    
-    <div id="footer-placeholder"></div>
-    
-    <!-- IMPORTANT: All scripts that use 'import' or 'export' MUST have type="module" -->
-    <script src="js/shared.js" type="module"></script>
-    <script src="js/index-init.js" type="module"></script>
-</body> 
+<body class="bg-gray-100">
+  <header class="hero-section">
+    <div class="container text-center py-16">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Complaint Management System</h1>
+      <p class="text-lg md:text-xl text-gray-200 mb-8">Empowering communities to report, track, and resolve issues efficiently.</p>
+    </div>
+  </header>
+  <main class="container py-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <a href="/citizen/login.html" class="card portal-card text-center p-8 transform hover:-translate-y-2 transition-transform duration-300">
+        <i class="fas fa-user fa-2x text-blue-600 mb-4"></i>
+        <h2 class="text-xl font-semibold text-gray-800">Citizen Portal</h2>
+        <p class="text-gray-600 mt-2">Submit and track your complaints with ease.</p>
+      </a>
+      <a href="/admin/login.html" class="card portal-card text-center p-8 transform hover:-translate-y-2 transition-transform duration-300">
+        <i class="fas fa-user-shield fa-2x text-blue-600 mb-4"></i>
+        <h2 class="text-xl font-semibold text-gray-800">Admin Portal</h2>
+        <p class="text-gray-600 mt-2">Manage users, complaints, and analytics.</p>
+      </a>
+      <a href="/staff/login.html" class="card portal-card text-center p-8 transform hover:-translate-y-2 transition-transform duration-300">
+        <i class="fas fa-tools fa-2x text-blue-600 mb-4"></i>
+        <h2 class="text-xl font-semibold text-gray-800">Staff Portal</h2>
+        <p class="text-gray-600 mt-2">Handle and resolve assigned complaints.</p>
+      </a>
+    </div>
+  </main>
+  <footer class="bg-gray-800 text-white text-center py-6">
+    <p>&copy; 2025 Complaint Management System. All rights reserved.</p>
+  </footer>
+</body>
 </html>

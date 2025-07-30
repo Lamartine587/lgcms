@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Complaints</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/shared/base.css">
+  <link rel="stylesheet" href="/assets/css/admin/complaint.css">
+</head>
+<body>
+  <div class="container">
+    <header class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Manage Complaints</h1>
+      <button onclick="logout('admin', '/admin/login.html')" class="btn btn-primary">Logout</button>
+    </header>
+    <div class="card">
+      <div class="flex space-x-4 mb-4">
+        <select id="status-filter" class="border p-2 rounded">
+          <option value="all">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="in_progress">In Progress</option>
+          <option value="resolved">Resolved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <select id="priority-filter" class="border p-2 rounded">
+          <option value="all">All Priorities</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+          <option value="Critical">Critical</option>
+        </select>
+      </div>
+      <table class="w-full border-collapse">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="p-2 text-left">Title</th>
+            <th class="p-2 text-left">Category</th>
+            <th class="p-2 text-left">Status</th>
+            <th class="p-2 text-left">Priority</th>
+            <th class="p-2 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="complaints-table"></tbody>
+      </table>
+      <div class="mt-4 flex justify-between">
+        <button id="prev-page" class="btn btn-primary" disabled>Previous</button>
+        <span>Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
+        <button id="next-page" class="btn btn-primary" disabled>Next</button>
+      </div>
+    </div>
+  </div>
+  <script src="/assets/js/shared/api.js"></script>
+  <script src="/assets/js/shared/auth.js"></script>
+  <script src="/assets/js/shared/utils.js"></script>
+  <script src="/assets/js/admin/complaints.js"></script>
+</body>
+</html>

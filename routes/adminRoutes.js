@@ -2,53 +2,89 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const User = require('../models/User');
-const Complaint = require('../models/Complaint'); // Uncomment this line to use the Complaint model
+const Complaint = require('../models/Complaint');
+const InviteCode = require('../models/InviteCode');
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 const upload = require('../utils/fileUpload');
 const ErrorResponse = require('../utils/ErrorResponse');
-const InviteCode = require('../models/InviteCode');
+const rateLimit = require('express-rate-limit');
+const cache = require('memory-cache');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
+const ChartJS = require('chart.js');
+const { createCanvas } = require('canvas');
 
-const generateInviteCode = () => {
-  return crypto.randomBytes(8).toString('hex').toUpperCase();
-};
+// Rate limiting configuration
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100,
+    message: 'Too many requests, please try again later'
+});
 
+// Constants
+const INVITE_CODE_EXPIRY_DAYS = 7;
+const DEFAULT_PAGE_SIZE = 10;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Helper functions
+const generateInviteCode = () => crypto.randomBytes(8).toString('hex').toUpperCase();
+
+/**
+ * Validates admin registration input
+ */
 const validateAdminInput = (req, res, next) => {
-  const { username, email, password } = req.body;
+    const { username, email, password } = req.body;
 
-  if (!validator.isEmail(email)) {
-    return next(new ErrorResponse('Please provide a valid email', 400));
-  }
+    if (!validator.isEmail(email)) {
+        return next(new ErrorResponse('Please provide a valid email', 400));
+    }
 
-  if (password.length < 8) {
-    return next(new ErrorResponse('Password must be at least 8 characters', 400));
-  }
+    if (password.length < 8) {
+        return next(new ErrorResponse('Password must be at least 8 characters', 400));
+    }
 
-  if (username.length < 3) {
-    return next(new ErrorResponse('Username must be at least 3 characters', 400));
-  }
+    if (username.length < 3) {
+        return next(new ErrorResponse('Username must be at least 3 characters', 400));
+    }
 
-  next();
+    next();
 };
 
-router.post('/register', async (req, res, next) => {
+/**
+ * Validates complaint status update
+ */
+const validateStatusUpdate = (req, res, next) => {
+    const { status, priority } = req.body;
+    const validStatuses = ['Pending', 'In Progress', 'Resolved', 'Rejected'];
+    const validPriorities = ['Low', 'Medium', 'High', 'Critical'];
+
+    if (status && !validStatuses.includes(status)) {
+        return next(new ErrorResponse('Invalid status value', 400));
+    }
+
+    if (priority && !validPriorities.includes(priority)) {
+        return next(new ErrorResponse('Invalid priority value', 400));
+    }
+
+    next();
+};
+
+/**
+ * ADMIN AUTHENTICATION ROUTES
+ */
+
+router.post('/register', validateAdminInput, async (req, res, next) => {
     try {
         const { username, email, password, inviteCode } = req.body;
 
-        if (!username || !email || !password || !inviteCode) {
-            return res.status(400).json({
-                success: false,
-                message: 'All fields are required'
-            });
-        }
-
+        // Check database connection
         if (mongoose.connection.readyState !== 1) {
             throw new Error('Database not connected');
         }
 
+        // Validate invite code
         const validCode = await InviteCode.findOne({
             code: inviteCode,
             used: false,
@@ -62,6 +98,7 @@ router.post('/register', async (req, res, next) => {
             });
         }
 
+        // Check for existing user
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
@@ -70,6 +107,7 @@ router.post('/register', async (req, res, next) => {
             });
         }
 
+        // Create new admin user
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -80,6 +118,7 @@ router.post('/register', async (req, res, next) => {
             role: 'admin'
         });
 
+        // Mark invite code as used
         validCode.used = true;
         validCode.usedBy = admin._id;
         await validCode.save();
@@ -95,10 +134,7 @@ router.post('/register', async (req, res, next) => {
         });
 
     } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: 'Registration failed - ' + err.message
-        });
+        next(new ErrorResponse(`Registration failed: ${err.message}`, 500));
     }
 });
 
@@ -111,16 +147,11 @@ router.post('/login', async (req, res, next) => {
         }
 
         const user = await User.findOne({ email }).select('+password');
-
-        if (!user) {
+        if (!user || user.role !== 'admin') {
             return next(new ErrorResponse('Invalid credentials', 401));
-        }
-        if (user.role !== 'admin') {
-            return next(new ErrorResponse('Not authorized as admin', 401));
         }
 
         const isMatch = await user.comparePassword(password);
-
         if (!isMatch) {
             return next(new ErrorResponse('Invalid credentials', 401));
         }
@@ -131,114 +162,113 @@ router.post('/login', async (req, res, next) => {
             { expiresIn: process.env.JWT_EXPIRES_IN }
         );
 
-        res.status(200).json({
+        res.json({
             success: true,
             token,
-            data: user
+            data: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role
+            }
         });
 
     } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: 'Login failed - ' + err.message
-        });
+        next(new ErrorResponse('Login failed', 500));
     }
 });
 
 router.post('/logout', authenticate, authorize('admin'), async (req, res, next) => {
     try {
-        res.status(200).json({ success: true, message: 'Logged out successfully' });
+        res.json({ success: true, message: 'Logged out successfully' });
     } catch (err) {
         next(new ErrorResponse('Logout failed', 500));
     }
 });
 
-// @desc    Get dashboard statistics
-// @route   GET /api/admin/stats
-// @access  Private/Admin
+/**
+ * DASHBOARD ROUTES
+ */
+
 router.get('/stats', authenticate, authorize('admin'), async (req, res, next) => {
+    const cacheKey = `admin-stats-${req.user.id}`;
+    const cached = cache.get(cacheKey);
+    
+    if (cached) {
+        return res.json({ success: true, fromCache: true, data: cached });
+    }
+    
     try {
-        const totalUsers = await User.countDocuments();
+        // Parallel database queries
+        const [totalUsers, activeComplaints, resolvedCases] = await Promise.all([
+            User.countDocuments(),
+            Complaint.countDocuments({ status: { $in: ['Pending', 'In Progress'] } }),
+            Complaint.countDocuments({ status: 'Resolved' })
+        ]);
 
-        let activeComplaintsCount = 0;
-        let resolvedCasesCount = 0;
-        let recentActivities = [];
+        // Get recent activity
+        const [recentComplaints, recentUsers] = await Promise.all([
+            Complaint.find()
+                .sort({ createdAt: -1 })
+                .limit(5)
+                .populate('user', 'username')
+                .lean(),
+            User.find()
+                .sort({ createdAt: -1 })
+                .limit(5)
+                .lean()
+        ]);
 
-        if (typeof Complaint !== 'undefined' && Complaint.collection) { // Check if Complaint model is properly defined
-            activeComplaintsCount = await Complaint.countDocuments({
-                status: { $in: ['Pending', 'In Progress'] }
-            });
-            resolvedCasesCount = await Complaint.countDocuments({
-                status: 'Resolved'
-            });
-
-            recentActivities = await Complaint.find()
-                                            .sort({ createdAt: -1 })
-                                            .limit(5)
-                                            .populate('user', 'username') // Populate the 'user' field
-                                            .select('title status createdAt');
-
-            recentActivities = recentActivities.map(comp => ({
-                id: comp._id,
+        const recentActivity = [
+            ...recentComplaints.map(c => ({
                 type: 'Complaint',
-                description: `Complaint "${comp.title}" (Status: ${comp.status}) filed by ${comp.user ? comp.user.username : 'N/A'}.`,
-                timestamp: comp.createdAt
-            }));
-
-            const recentUsers = await User.find()
-                                        .sort({ createdAt: -1 })
-                                        .limit(5)
-                                        .select('username createdAt role');
-
-            const userActivities = recentUsers.map(user => ({
-                id: user._id,
+                description: `Complaint "${c.title}" (${c.status}) by ${c.user?.username || 'Anonymous'}`,
+                timestamp: c.createdAt
+            })),
+            ...recentUsers.map(u => ({
                 type: 'User',
-                description: `New ${user.role} user "${user.username}" registered.`,
-                timestamp: user.createdAt
-            }));
+                description: `New ${u.role} user "${u.username}" registered`,
+                timestamp: u.createdAt
+            }))
+        ].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
 
-            recentActivities = [...recentActivities, ...userActivities]
-                                .sort((a, b) => b.timestamp - a.timestamp)
-                                .slice(0, 5);
-        } else {
-            activeComplaintsCount = 15;
-            resolvedCasesCount = 85;
-            recentActivities = [
-                { id: 1, type: 'User Registered', description: 'New admin user "final@gmail.com" registered.', timestamp: new Date() },
-                { id: 2, type: 'Complaint Filed', description: 'Complaint #1234 filed by John Doe.', timestamp: new Date(Date.now() - 3600000) },
-                { id: 3, type: 'Case Resolved', description: 'Case #5678 resolved by Jane Smith.', timestamp: new Date(Date.now() - 7200000) },
-            ];
-        }
+        const stats = {
+            totalUsers,
+            activeComplaints,
+            resolvedCases,
+            todayActivity: recentActivity.length,
+            recentActivity
+        };
 
-        res.status(200).json({
-            success: true,
-            data: {
-                totalUsers,
-                activeComplaints: activeComplaintsCount,
-                resolvedCases: resolvedCasesCount,
-                recentActivity: recentActivities
-            }
-        });
+        cache.put(cacheKey, stats, CACHE_TTL);
 
+        res.json({ success: true, fromCache: false, data: stats });
     } catch (err) {
-        next(new ErrorResponse('Could not fetch dashboard statistics', 500));
+        next(new ErrorResponse('Failed to fetch dashboard stats', 500));
     }
 });
 
+/**
+ * USER MANAGEMENT ROUTES
+ */
 
 router.get('/users', authenticate, authorize('admin'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || DEFAULT_PAGE_SIZE;
         const skip = (page - 1) * limit;
 
-        const totalUsers = await User.countDocuments();
-        const users = await User.find()
-                                .skip(skip)
-                                .limit(limit)
-                                .select('-password');
+        // Parallel count and data fetch
+        const [totalUsers, users] = await Promise.all([
+            User.countDocuments(),
+            User.find()
+                .skip(skip)
+                .limit(limit)
+                .select('-password -__v')
+                .lean()
+        ]);
 
-        res.status(200).json({
+        res.json({
             success: true,
             data: {
                 users,
@@ -247,58 +277,39 @@ router.get('/users', authenticate, authorize('admin'), async (req, res, next) =>
                 totalCount: totalUsers
             }
         });
-
     } catch (err) {
-        next(new ErrorResponse('Could not fetch users', 500));
+        next(new ErrorResponse('Failed to fetch users', 500));
     }
 });
 
-// @desc    Get all complaints (for admin management)
-// @route   GET /api/admin/complaints
-// @access  Private/Admin
+/**
+ * COMPLAINT MANAGEMENT ROUTES
+ */
+
 router.get('/complaints', authenticate, authorize('admin'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const statusFilter = req.query.status || 'all';
-        const priorityFilter = req.query.priority || 'all';
+        const limit = parseInt(req.query.limit) || DEFAULT_PAGE_SIZE;
+        const { status, priority } = req.query;
         const skip = (page - 1) * limit;
 
-        let query = {};
-        if (statusFilter !== 'all') {
-            query.status = statusFilter;
-        }
-        if (priorityFilter !== 'all') {
-            query.priority = priorityFilter;
-        }
+        // Build query
+        const query = {};
+        if (status && status !== 'all') query.status = status;
+        if (priority && priority !== 'all') query.priority = priority;
 
-        let complaints = [];
-        let totalComplaints = 0;
+        // Parallel count and data fetch
+        const [totalComplaints, complaints] = await Promise.all([
+            Complaint.countDocuments(query),
+            Complaint.find(query)
+                .populate('user', 'username')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean()
+        ]);
 
-        if (typeof Complaint !== 'undefined' && Complaint.collection) { // Check if Complaint model is properly defined
-            totalComplaints = await Complaint.countDocuments(query);
-            complaints = await Complaint.find(query)
-                                        .populate('user', 'username') // Populate user who submitted it
-                                        .sort({ createdAt: -1 })
-                                        .skip(skip)
-                                        .limit(limit);
-        } else {
-            // Dummy data if Complaint model is not available
-            const dummyComplaints = [
-                { _id: 'comp1', title: 'Leaking Pipe', user: { username: 'John Doe' }, createdAt: new Date(), status: 'Pending', priority: 'High', description: 'Pipe is leaking badly.', location: { text: '123 Main St' }, evidenceImages: ['uploads/image1.png'], evidenceVideos: [], evidencePdfs: [] },
-                { _id: 'comp2', title: 'Pothole on Road', user: { username: 'Jane Smith' }, createdAt: new Date(Date.now() - 86400000), status: 'In Progress', priority: 'Medium', description: 'Large pothole on Elm Street.', location: { text: '456 Elm St' }, evidenceImages: [], evidenceVideos: [], evidencePdfs: [] },
-                { _id: 'comp3', title: 'Streetlight Out', user: { username: 'Alice Brown' }, createdAt: new Date(Date.now() - 172800000), status: 'Resolved', priority: 'Low', description: 'Streetlight near park is out.', location: { text: '789 Park Ave' }, evidenceImages: [], evidenceVideos: [], evidencePdfs: [] },
-                { _id: 'comp4', title: 'Illegal Dumping', user: { username: 'Bob White' }, createdAt: new Date(Date.now() - 259200000), status: 'Pending', priority: 'High', description: 'Trash dumped near river.', location: { text: 'River Side' }, evidenceImages: ['uploads/dumping.png'], evidenceVideos: [], evidencePdfs: [] },
-            ];
-            complaints = dummyComplaints.filter(c => {
-                const statusMatch = statusFilter === 'all' || c.status === statusFilter;
-                const priorityMatch = priorityFilter === 'all' || c.priority === priorityFilter;
-                return statusMatch && priorityMatch;
-            }).slice(skip, skip + limit);
-            totalComplaints = complaints.length;
-        }
-
-        res.status(200).json({
+        res.json({
             success: true,
             data: {
                 complaints,
@@ -307,193 +318,200 @@ router.get('/complaints', authenticate, authorize('admin'), async (req, res, nex
                 totalCount: totalComplaints
             }
         });
-
     } catch (err) {
-        console.error('Error fetching complaints:', err);
-        next(new ErrorResponse('Could not fetch complaints', 500));
+        next(new ErrorResponse('Failed to fetch complaints', 500));
     }
 });
 
-// @desc    Get single complaint by ID
-// @route   GET /api/admin/complaints/:id
-// @access  Private/Admin
 router.get('/complaints/:id', authenticate, authorize('admin'), async (req, res, next) => {
     try {
-        const complaintId = req.params.id;
-        let complaint = null;
-
-        if (typeof Complaint !== 'undefined' && Complaint.collection) {
-            complaint = await Complaint.findById(complaintId).populate('user', 'username email');
-        } else {
-            // Dummy data for a single complaint
-            const dummyComplaints = [
-                { _id: 'comp1', title: 'Leaking Pipe', user: { username: 'John Doe', email: 'john@example.com' }, createdAt: new Date(), status: 'Pending', priority: 'High', description: 'Pipe is leaking badly in the kitchen.', location: { text: '123 Main St, Apt 4B' }, evidenceImages: ['uploads/leaking_pipe.jpg'], evidenceVideos: [], evidencePdfs: [] },
-                { _id: 'comp2', title: 'Pothole on Road', user: { username: 'Jane Smith', email: 'jane@example.com' }, createdAt: new Date(Date.now() - 86400000), status: 'In Progress', priority: 'Medium', description: 'Large pothole on Elm Street near the school.', location: { text: '456 Elm St' }, evidenceImages: [], evidenceVideos: ['uploads/pothole_video.mp4'], evidencePdfs: [] },
-                { _id: 'comp3', title: 'Streetlight Out', user: { username: 'Alice Brown', email: 'alice@example.com' }, createdAt: new Date(Date.now() - 172800000), status: 'Resolved', priority: 'Low', description: 'Streetlight near park entrance is out, making it dark at night.', location: { text: '789 Park Ave' }, evidenceImages: [], evidenceVideos: [], evidencePdfs: ['uploads/streetlight_report.pdf'] },
-                { _id: 'comp4', title: 'Illegal Dumping', user: { username: 'Bob White', email: 'bob@example.com' }, createdAt: new Date(Date.now() - 259200000), status: 'Pending', priority: 'High', description: 'Trash dumped near river, attracting pests.', location: { text: 'River Side, near bridge' }, evidenceImages: ['uploads/illegal_dumping.jpg', 'uploads/more_dumping.png'], evidenceVideos: [], evidencePdfs: [] },
-            ];
-            complaint = dummyComplaints.find(c => c._id === complaintId);
-        }
+        const complaint = await Complaint.findById(req.params.id)
+            .populate('user', 'username email')
+            .lean();
 
         if (!complaint) {
             return next(new ErrorResponse('Complaint not found', 404));
         }
 
-        res.status(200).json({
-            success: true,
-            data: complaint
-        });
-
+        res.json({ success: true, data: complaint });
     } catch (err) {
-        console.error('Error fetching single complaint:', err);
-        next(new ErrorResponse('Could not fetch complaint details', 500));
+        next(new ErrorResponse('Failed to fetch complaint', 500));
     }
 });
 
-// @desc    Update complaint status and/or priority
-// @route   PUT /api/admin/complaints/:id/status
-// @access  Private/Admin
-router.put('/complaints/:id/status', authenticate, authorize('admin'), async (req, res, next) => {
+router.put('/complaints/:id/status', authenticate, authorize('admin'), validateStatusUpdate, async (req, res, next) => {
     try {
-        const complaintId = req.params.id;
-        const { status, priority } = req.body; // Expecting new status and/or priority
+        const { status, priority } = req.body;
+        const updateFields = {};
+        if (status) updateFields.status = status;
+        if (priority) updateFields.priority = priority;
 
-        if (!status && !priority) {
-            return next(new ErrorResponse('No status or priority provided for update', 400));
-        }
-
-        let updatedComplaint = null;
-        if (typeof Complaint !== 'undefined' && Complaint.collection) {
-            const updateFields = {};
-            if (status) updateFields.status = status;
-            if (priority) updateFields.priority = priority;
-
-            updatedComplaint = await Complaint.findByIdAndUpdate(
-                complaintId,
-                { $set: updateFields },
-                { new: true, runValidators: true } // Return the updated document and run schema validators
-            );
-        } else {
-            // Dummy update for demonstration
-            console.log(`Dummy update: Complaint ${complaintId} to status: ${status}, priority: ${priority}`);
-            updatedComplaint = { _id: complaintId, status: status || 'N/A', priority: priority || 'N/A', message: 'Dummy update successful' };
-        }
+        const updatedComplaint = await Complaint.findByIdAndUpdate(
+            req.params.id,
+            { $set: updateFields },
+            { new: true, runValidators: true }
+        ).lean();
 
         if (!updatedComplaint) {
-            return next(new ErrorResponse('Complaint not found or could not be updated', 404));
+            return next(new ErrorResponse('Complaint not found', 404));
         }
 
-        res.status(200).json({
+        // Invalidate stats cache
+        cache.del(`admin-stats-${req.user.id}`);
+
+        res.json({
             success: true,
             message: 'Complaint updated successfully',
             data: updatedComplaint
         });
-
     } catch (err) {
-        console.error('Error updating complaint status:', err);
-        next(new ErrorResponse('Could not update complaint status', 500));
+        next(new ErrorResponse('Failed to update complaint', 500));
     }
 });
 
+/**
+ * CHART DATA ROUTES
+ */
 
-router.post('/generate-invite', authenticate, authorize('admin'), async (req, res, next) => {
-  try {
-    const inviteCode = generateInviteCode();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    const newInvite = new InviteCode({
-      code: inviteCode,
-      createdBy: req.user.id,
-      expiresAt,
-      used: false
-    });
-
-    await newInvite.save();
-
-    res.status(201).json({
-      success: true,
-      data: {
-        code: inviteCode,
-        expiresAt,
-        createdBy: req.user.id
-      }
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.get('/profile', authenticate, authorize('admin'), async (req, res, next) => {
-  try {
-    const admin = await User.findById(req.user.id)
-      .select('-password')
-      .populate('department', 'name');
-
-    if (!admin) {
-      return next(new ErrorResponse('Admin not found', 404));
-    }
-
-    res.status(200).json({
-      success: true,
-      data: admin
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.put('/profile', authenticate, authorize('admin'), async (req, res, next) => {
-  try {
-    const { fullName, email, phone, department, bio } = req.body;
-
-    if (email && !validator.isEmail(email)) {
-      return next(new ErrorResponse('Please provide a valid email', 400));
-    }
-
-    const admin = await User.findByIdAndUpdate(
-      req.user.id,
-      { fullName, email, phone, department, bio },
-      {
-        new: true,
-        runValidators: true
-      }
-    ).select('-password');
-
-    res.status(200).json({
-      success: true,
-      data: admin
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post(
-  '/avatar',
-  authenticate,
-  authorize('admin'),
-  upload.single('avatar'),
-  async (req, res, next) => {
+router.get('/charts/:type', authenticate, authorize('admin'), async (req, res, next) => {
     try {
-      const admin = await User.findById(req.user.id);
+        const { type } = req.params;
+        const canvas = createCanvas(800, 400);
+        const ctx = canvas.getContext('2d');
 
-      if (!admin) {
-        return next(new ErrorResponse('Admin not found', 404));
-      }
+        let chartConfig;
+        switch (type) {
+            case 'complaint-status':
+                const statusCounts = await Complaint.aggregate([
+                    { $group: { _id: '$status', count: { $sum: 1 } } }
+                ]);
+                
+                chartConfig = {
+                    type: 'doughnut',
+                    data: {
+                        labels: statusCounts.map(s => s._id),
+                        datasets: [{
+                            data: statusCounts.map(s => s.count),
+                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+                        }]
+                    }
+                };
+                break;
+                
+            case 'complaint-trends':
+                const trends = await Complaint.aggregate([
+                    { 
+                        $group: { 
+                            _id: { 
+                                year: { $year: '$createdAt' },
+                                month: { $month: '$createdAt' }
+                            },
+                            count: { $sum: 1 }
+                        }
+                    },
+                    { $sort: { '_id.year': 1, '_id.month': 1 } },
+                    { $limit: 12 }
+                ]);
+                
+                chartConfig = {
+                    type: 'line',
+                    data: {
+                        labels: trends.map(t => `${t._id.month}/${t._id.year}`),
+                        datasets: [{
+                            label: 'Complaints',
+                            data: trends.map(t => t.count),
+                            borderColor: '#36A2EB',
+                            fill: false
+                        }]
+                    }
+                };
+                break;
+                
+            case 'user-role':
+                const roleCounts = await User.aggregate([
+                    { $group: { _id: '$role', count: { $sum: 1 } } }
+                ]);
+                
+                chartConfig = {
+                    type: 'pie',
+                    data: {
+                        labels: roleCounts.map(r => r._id),
+                        datasets: [{
+                            data: roleCounts.map(r => r.count),
+                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                        }]
+                    }
+                };
+                break;
+                
+            default:
+                return next(new ErrorResponse('Invalid chart type', 400));
+        }
 
-      if (req.file) {
-        admin.avatar = req.file.path;
-        await admin.save();
-      }
-
-      res.status(200).json({
-        success: true,
-        data: admin.avatar
-      });
+        new ChartJS(ctx, chartConfig);
+        
+        res.json({
+            success: true,
+            data: chartConfig
+        });
     } catch (err) {
-      next(err);
+        next(new ErrorResponse('Failed to generate chart', 500));
     }
-  }
-);
+});
+
+/**
+ * PREDICTION ROUTES
+ */
+
+router.post('/predict/resolution_time', authenticate, authorize('admin'), async (req, res, next) => {
+    try {
+        const { complaint_description_length, num_evidence_files } = req.body;
+        
+        // Mock prediction - replace with actual ML model
+        const baseDays = 5;
+        const descFactor = complaint_description_length / 100;
+        const evidenceFactor = num_evidence_files * 0.5;
+        const predictedDays = Math.max(1, Math.min(30, 
+            baseDays + descFactor + evidenceFactor + (Math.random() * 2 - 1)
+        )).toFixed(1);
+        
+        res.json({
+            success: true,
+            predicted_resolution_time_days: predictedDays,
+            explanation: `Based on description length (${complaint_description_length} words) and ${num_evidence_files} evidence files`
+        });
+    } catch (err) {
+        next(new ErrorResponse('Prediction failed', 500));
+    }
+});
+
+/**
+ * ADMIN UTILITY ROUTES
+ */
+
+router.post('/generate-invite', authenticate, authorize('admin'), apiLimiter, async (req, res, next) => {
+    try {
+        const expiresAt = new Date(Date.now() + INVITE_CODE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+        const newInvite = new InviteCode({
+            code: generateInviteCode(),
+            createdBy: req.user.id,
+            expiresAt,
+            used: false
+        });
+
+        await newInvite.save();
+
+        res.status(201).json({
+            success: true,
+            data: {
+                code: newInvite.code,
+                expiresAt,
+                createdBy: req.user.id
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+});
 
 module.exports = router;

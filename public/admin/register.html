@@ -1,60 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Registration</title>
-    <link rel="stylesheet" href="/css/style.css">
-    <!-- Optional: Font Awesome for icons if you want to use them -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Register</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/shared/base.css">
+  <link rel="stylesheet" href="/assets/css/shared/auth.css">
 </head>
 <body>
-    <div class="auth-container">
-        <div class="auth-card card"> <!-- Added 'card' class for consistent styling -->
-            <div class="auth-header">
-                <h2><i class="fas fa-user-plus"></i> Admin Registration</h2>
-                <p>Create a new administrator account</p>
-            </div>
-            
-            <form id="adminRegisterForm" class="auth-form">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required minlength="3" class="form-control" placeholder="Enter your username"> <!-- Added 'form-control' class -->
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required class="form-control" placeholder="Enter your email"> <!-- Added 'form-control' class -->
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required minlength="8" class="form-control" placeholder="Enter your password"> <!-- Added 'form-control' class -->
-                </div>
-                
-                <div class="form-group">
-                    <label for="confirmPassword">Confirm Password</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8" class="form-control" placeholder="Confirm your password"> <!-- Added 'form-control' class -->
-                </div>
-                
-                <div class="form-group">
-                    <label for="inviteCode">Invitation Code</label>
-                    <input type="text" id="inviteCode" name="inviteCode" required class="form-control" placeholder="Enter invitation code"> <!-- Added 'form-control' class -->
-                    <small class="form-text-muted">Only authorized personnel can register as admins</small> <!-- Added class for consistent small text -->
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-user-check"></i> Register</button> <!-- Added 'btn' class -->
-                </div>
-            </form>
-            
-            <div class="auth-footer">
-                <p>Already have an account? <a href="/admin/login.html">Login here</a></p>
-            </div>
-        </div>
+  <div class="auth-container">
+    <div class="auth-card">
+      <h2>Admin Register</h2>
+      <form id="register-form">
+        <input type="text" id="username" placeholder="Username" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <input type="text" id="inviteCode" placeholder="Invite Code" required>
+        <button type="submit" class="btn btn-primary">Register</button>
+      </form>
+      <p class="mt-4 text-center">Already have an account? <a href="/admin/login.html" class="text-blue-600">Login</a></p>
     </div>
-
-    <!-- IMPORTANT: All scripts that use 'import' or 'export' MUST have type="module" -->
-    <script src="js/admin-register.js" type="module"></script> <!-- Corrected path and added type="module" -->
+  </div>
+  <script src="/assets/js/shared/api.js"></script>
+  <script src="/assets/js/shared/auth.js"></script>
+  <script>
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        username: document.getElementById('username').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+        inviteCode: document.getElementById('inviteCode').value,
+      };
+      await register(data, 'admin', '/admin/dashboard.html');
+    });
+  </script>
 </body>
 </html>

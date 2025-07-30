@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics - Kakamega County</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/shared/base.css">
+  <link rel="stylesheet" href="/assets/css/admin/analytics.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+<body class="bg-gray-100">
+  <nav class="bg-white shadow py-4">
+    <div class="container flex justify-between items-center">
+      <div class="flex items-center">
+        <img src="/assets/images/kakamega-logo.png" alt="Kakamega County Logo" class="h-8 mr-2">
+        <h1 class="text-xl font-bold text-gray-800">Kakamega CMS</h1>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <a href="/index.html" class="btn btn-primary mr-2" aria-label="Home">
+          <i class="fas fa-home mr-1"></i> Home
+        </a>
+        <a href="/admin/dashboard.html" class="btn btn-primary mr-2" aria-label="Admin Dashboard">
+          <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+        </a>
+        <a href="/admin/users.html" class="btn btn-primary mr-2" aria-label="Manage Users">
+          <i class="fas fa-users mr-1"></i> Users
+        </a>
+        <a href="/admin/complaints.html" class="btn btn-primary mr-2" aria-label="Manage Complaints">
+          <i class="fas fa-exclamation-circle mr-1"></i> Complaints
+        </a>
+        <a href="/admin/settings.html" class="btn btn-primary mr-2" aria-label="Settings">
+          <i class="fas fa-cog mr-1"></i> Settings
+        </a>
+        <button onclick="logout('admin', '/admin/login.html')" class="btn btn-primary" aria-label="Logout">
+          <i class="fas fa-sign-out-alt mr-1"></i> Logout
+        </button>
+      </div>
+    </div>
+  </nav>
+  <main class="container py-8">
+    <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-6 rounded-lg shadow-lg mb-8">
+      <h1 class="text-3xl font-bold text-center flex items-center justify-center">
+        <i class="fas fa-chart-bar mr-2"></i> Analytics Dashboard
+      </h1>
+    </header>
+    <div class="card analytics-card mb-6">
+      <h2 class="text-lg font-semibold mb-4 flex items-center">
+        <i class="fas fa-filter text-blue-600 mr-2"></i> Date Range Filter
+      </h2>
+      <form id="date-filter-form" class="flex flex-col sm:flex-row gap-4">
+        <input type="date" id="start-date" required class="p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
+        <input type="date" id="end-date" required class="p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
+        <button type="submit" class="btn btn-primary">Apply Filter</button>
+      </form>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="card analytics-card">
+        <h2 class="text-lg font-semibold mb-4 flex items-center">
+          <i class="fas fa-chart-pie text-blue-600 mr-2"></i> Complaint Status Distribution
+        </h2>
+        <canvas id="status-chart" aria-label="Complaint Status Distribution Chart"></canvas>
+      </div>
+      <div class="card analytics-card">
+        <h2 class="text-lg font-semibold mb-4 flex items-center">
+          <i class="fas fa-chart-line text-blue-600 mr-2"></i> Complaint Trends
+        </h2>
+        <canvas id="trends-chart" aria-label="Complaint Trends Chart"></canvas>
+      </div>
+      <div class="card analytics-card">
+        <h2 class="text-lg font-semibold mb-4 flex items-center">
+          <i class="fas fa-user-tag text-blue-600 mr-2"></i> User Role Distribution
+        </h2>
+        <canvas id="role-chart" aria-label="User Role Distribution Chart"></canvas>
+      </div>
+      <div class="card analytics-card">
+        <h2 class="text-lg font-semibold mb-4 flex items-center">
+          <i class="fas fa-clock text-blue-600 mr-2"></i> Resolution Time Distribution
+        </h2>
+        <canvas id="resolution-time-chart" aria-label="Resolution Time Distribution Chart"></canvas>
+      </div>
+    </div>
+    <div class="card analytics-card mt-6">
+      <h2 class="text-lg font-semibold mb-4 flex items-center">
+        <i class="fas fa-magic text-blue-600 mr-2"></i> Predict Resolution Time
+      </h2>
+      <form id="prediction-form" class="space-y-4">
+        <div>
+          <label for="description-length" class="block text-sm font-medium text-gray-700">Description Length (words)</label>
+          <input type="number" id="description-length" placeholder="Enter word count" required min="0"
+                 class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
+        </div>
+        <div>
+          <label for="evidence-files" class="block text-sm font-medium text-gray-700">Number of Evidence Files</label>
+          <input type="number" id="evidence-files" placeholder="Enter number of files" required min="0"
+                 class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
+        </div>
+        <div>
+          <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+          <select id="category" required class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
+            <option value="" disabled selected>Select Category</option>
+            <option value="Road Issue">Road Issue</option>
+            <option value="Sanitation">Sanitation</option>
+            <option value="Public Safety">Public Safety</option>
+            <option value="Health">Health</option>
+            <option value="Education">Education</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="priority" class="block text-sm font-medium text-gray-700">Priority</label>
+          <select id="priority" required class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
+            <option value="" disabled selected>Select Priority</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary w-full">Predict Resolution Time</button>
+      </form>
+      <p id="prediction-result" class="mt-4 hidden alert" aria-live="polite"></p>
+    </div>
+  </main>
+  <footer class="bg-gray-800 text-white text-center py-4">
+    <p>&copy; 2025 Kakamega County Complaint Management System. All rights reserved.</p>
+  </footer>
+  <script src="/assets/js/shared/api.js"></script>
+  <script src="/assets/js/shared/auth.js"></script>
+  <script src="/assets/js/admin/analytics.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+/* Citizen dashboard specific styles */
+.card p.text-2xl {
+  color: #2563eb;
+  font-weight: bold;
+}
+
+ul li {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}

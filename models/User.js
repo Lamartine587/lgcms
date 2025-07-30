@@ -1,15 +1,19 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
-const { v4: uuidv4 } = require('uuid'); // Add this for generating UUIDs
+const { v4: uuidv4 } = require('uuid');
 
+/**
+ * User Schema for Complaint Management System
+ * Defines the structure for user data, including citizens, admins, and staff.
+ * Includes fields for authentication, roles, and department association.
+ */
 const userSchema = new mongoose.Schema({
-  // Add a unique userId field
   userId: {
     type: String,
     unique: true,
-    required: true, // Make it required
-    default: () => uuidv4() // Automatically generate a UUID on creation
+    required: true,
+    default: () => uuidv4()
   },
   username: {
     type: String,
@@ -37,14 +41,15 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['citizen', 'admin'],
+    enum: ['citizen', 'admin', 'staff'],
     default: 'citizen'
   },
   fullName: String,
   phone: String,
   department: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Department'
+    ref: 'Department',
+    required: [function() { return this.role === 'staff'; }, 'Department is required for staff users']
   },
   bio: String,
   createdAt: {
@@ -53,21 +58,24 @@ const userSchema = new mongoose.Schema({
   }
 });
 
+// Indexes for faster queries
+userSchema.index({ userId: 1 });
+userSchema.index({ email: 1 });
+
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) return next();
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (err) {
-        next(err);
-    }
+  if (!this.isModified('password')) return next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Method to compare passwords
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  // TEMPORARY DEBUG LOGS:
   console.log(`[User Model] Comparing: Candidate='${candidatePassword}' (length: ${candidatePassword.length})`);
   console.log(`[User Model] Stored Hash (partial): '${this.password.substring(0, 15)}...' (full length: ${this.password.length})`);
   return await bcrypt.compare(candidatePassword, this.password);
@@ -78,6 +86,7 @@ userSchema.methods.toJSON = function() {
   const user = this.toObject();
   delete user.password;
   delete user.__v;
+  delete user.createdAt; // Exclude createdAt from API responses
   return user;
 };
 
