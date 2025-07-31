@@ -38,7 +38,7 @@ securityMiddleware(app);
 
 // CORS configuration for the frontend server
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:8000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:5000',
   credentials: true,
 }));
 
@@ -49,8 +49,8 @@ app.use((req, res, next) => {
     `default-src 'self'; ` +
     `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; ` +
     `style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; ` +
-    `img-src 'self' data: ${process.env.PYTHON_ML_SERVICE_URL || 'http://localhost:8001'} https://*.tile.openstreetmap.org; ` +
-    `connect-src 'self' ${process.env.PYTHON_ML_SERVICE_URL || 'http://localhost:8001'} https://*.tile.openstreetmap.org; ` +
+    `img-src 'self' data: ${process.env.PYTHON_ML_SERVICE_URL || 'http://localhost:5001'} https://*.tile.openstreetmap.org; ` +
+    `connect-src 'self' ${process.env.PYTHON_ML_SERVICE_URL || 'http://localhost:5001'} https://*.tile.openstreetmap.org; ` +
     `font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; ` +
     `object-src 'none'; ` +
     `base-uri 'self';`
@@ -141,7 +141,7 @@ app.post(
 
 // --- PROXY FOR PYTHON ML SERVICE ---
 const pythonMlProxy = createProxyMiddleware({
-    target: process.env.PYTHON_ML_SERVICE_URL || 'http://localhost:8001',
+    target: process.env.PYTHON_ML_SERVICE_URL || 'http://localhost:5001',
     changeOrigin: true,
     pathRewrite: {
         '^/api/ml': '/api/ml',

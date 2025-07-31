@@ -1,7 +1,6 @@
-const API_BASE_URL = 'http://localhost:5000'; // Your Node.js backend
-const ADMIN_API_BASE_URL = `${API_BASE_URL}/api/admin`; // Node.js Admin routes
-const ML_API_BASE_URL = 'http://localhost:5001/api/ml'; // Your Flask ML backend
-
+const API_BASE_URL = 'http://localhost:5000';
+const ADMIN_API_BASE_URL = `${API_BASE_URL}/api/admin`;
+const ML_API_BASE_URL = 'http://localhost:5001/api/ml'; // This should be 5001
 // Auth token management (globally accessible)
 function setToken(token) {
   localStorage.setItem('token', token);
@@ -63,8 +62,8 @@ async function _internalFetchApi(url, method = 'GET', data = null, isFormData = 
     
     if (!response.ok) {
       const errorMsg = result.message || 
-                       result.error || 
-                       `Request failed with status ${response.status}: ${response.statusText}`;
+                      result.error || 
+                      `Request failed with status ${response.status}: ${response.statusText}`;
       
       const error = new Error(errorMsg);
       error.status = response.status;
@@ -466,7 +465,7 @@ getMyComplaints: function(params = {}) { // RENAMED from getComplaints
   return apiRequest(`/api/complaints/my-complaints?${queryString}`, 'GET');
 },
 createComplaint: function(complaintData, isAnonymous = false) {
-  const endpoint = isAnonymous ? '/api/complaints/anonymous' : '/api/complaints';
+  const endpoint = isAnonymous ? '/complaints/anonymous' : '/complaints';
   const usesFormData = complaintData instanceof FormData;
   return apiRequest(endpoint, 'POST', complaintData, usesFormData);
 }
