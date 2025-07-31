@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User'); 
-// IMPORTANT: Uncomment the line below and ensure you have a Complaint model defined in '../models/Complaint'
-const Complaint = require('../models/Complaint'); 
+const User = require('../models/User');
+const Complaint = require('../models/Complaint');
 const { authenticate, authorize, optionalAuthenticate } = require('../middleware/authMiddleware');
 const ErrorResponse = require('../utils/ErrorResponse');
 const multer = require('multer');
@@ -30,10 +29,139 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-const upload = multer({
+// Initialize multer middleware correctly
+const uploadMiddleware = multer({
     storage: storage,
-    limits: { fileSize: 1024 * 1024 * 50 }, // 50MB file size limit
+    limits: { fileSize: 1024 * 1024 * 50 }, // 50MB
     fileFilter: fileFilter
+});
+
+// @desc    Submit an anonymous complaint
+// @route   POST /api/complaints/anonymous
+// @access  Public
+router.post(
+  '/anonymous',
+  uploadMiddleware.fields([
+    { name: 'evidenceImages', maxCount: 5 },
+    { name: 'evidenceVideos', maxCount: 2 },
+    { name: 'evidenceDocuments', maxCount: 3 }
+  ]),
+  async (req, res, next) => {
+    try {
+      // Process form data (similar to your regular complaint route)
+      const title = Array.isArray(req.body.title) ? req.body.title[0] : req.body.title;
+      const description = Array.isArray(req.body.description) ? req.body.description[0] : req.body.description;
+      const category = Array.isArray(req.body.category) ? req.body.category[0] : req.body.category;
+      const locationText = Array.isArray(req.body.locationText) ? req.body.locationText[0] : req.body.locationText;
+
+      // Validate required fields
+      if (!title || !description || !category || !locationText) {
+        return next(new ErrorResponse('All required fields must be filled', 400));
+      }
+
+      // Process files
+      const evidenceImages = req.files?.evidenceImages?.map(file => file.path) || [];
+      const evidenceVideos = req.files?.evidenceVideos?.map(file => file.path) || [];
+      const evidenceDocuments = req.files?.evidenceDocuments?.map(file => file.path) || [];
+
+      // Create location object
+      const location = {
+        type: 'Point',
+        coordinates: [0, 0], // Default coordinates
+        address: locationText
+      };
+
+      // Try to parse coordinates if provided
+      if (locationText.includes(',')) {
+        const coords = locationText.split(',').map(Number);
+        if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+          location.coordinates = [coords[1], coords[0]]; // [lng, lat]
+        }
+      }
+
+      const newComplaint = await Complaint.create({
+        title,
+        description,
+        category,
+        location,
+        evidenceImages,
+        evidenceVideos,
+        evidenceDocuments,
+        isAnonymous: true
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Anonymous complaint submitted successfully!',
+        data: newComplaint
+      });
+
+    } catch (err) {
+      console.error('Anonymous complaint submission error:', err);
+      if (err.name === 'ValidationError') {
+        return next(new ErrorResponse(Object.values(err.errors).map(e => e.message).join(', '), 400));
+      }
+      next(new ErrorResponse('Anonymous complaint submission failed', 500));
+    }
+  }
+);
+
+// @desc    Get complaints assigned to staff member
+// @route   GET /api/complaints/assigned
+// @access  Private (Staff)
+router.get('/assigned', authenticate, authorize('staff'), async (req, res, next) => {
+    try {
+        const staffId = req.user.id;
+        const { status } = req.query;
+        
+        const query = { assignedTo: staffId };
+        if (status) query.status = status;
+
+        const complaints = await Complaint.find(query)
+            .sort({ createdAt: -1 })
+            .populate('user', 'name email');
+
+        res.status(200).json({
+            success: true,
+            data: complaints
+        });
+    } catch (err) {
+        next(new ErrorResponse('Error fetching assigned complaints', 500));
+    }
+});
+
+// @desc    Get all complaints (for admin dashboard)
+// @route   GET /api/complaints
+// @access  Private (Admin)
+router.get('/', authenticate, authorize('admin'), async (req, res, next) => {
+    try {
+        const { status, category, page = 1, limit = 10 } = req.query;
+        
+        const query = {};
+        if (status) query.status = status;
+        if (category) query.category = category;
+
+        const complaints = await Complaint.find(query)
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .populate('user', 'name email')
+            .populate('assignedTo', 'name email');
+
+        const total = await Complaint.countDocuments(query);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                complaints,
+                total,
+                page: Number(page),
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (err) {
+        next(new ErrorResponse('Error fetching complaints', 500));
+    }
 });
 
 // @desc    Submit a new complaint
@@ -42,89 +170,67 @@ const upload = multer({
 router.post(
     '/',
     optionalAuthenticate,
-    upload.fields([
+    uploadMiddleware.fields([
         { name: 'evidenceImages', maxCount: 5 },
         { name: 'evidenceVideos', maxCount: 2 },
-        { name: 'evidencePdfs', maxCount: 1 }
+        { name: 'evidenceDocuments', maxCount: 3 }
     ]),
     async (req, res, next) => {
-        console.log('Backend: Received Complaint Data:', req.body);
-        console.log('Backend: Received Files:', req.files);
-
         try {
-            // Frontend sends 'title' (category dropdown) and 'description' (detailed text)
-            const { title: categoryFromFrontend, description: detailedDescription, locationText, latitude, longitude } = req.body;
-            const userId = req.user ? req.user.id : null; 
+            // Ensure we're working with string values
+            const title = Array.isArray(req.body.title) ? req.body.title[0] : req.body.title;
+            const description = Array.isArray(req.body.description) ? req.body.description[0] : req.body.description;
+            const category = Array.isArray(req.body.category) ? req.body.category[0] : req.body.category;
+            const locationText = Array.isArray(req.body.locationText) ? req.body.locationText[0] : req.body.locationText;
 
-            // Note: Your provided Complaint model schema does NOT include evidenceImages, Videos, Pdfs.
-            // If you intend to store these, you must add them to your Complaint model schema.
-            // For now, these will be collected but not saved to the Complaint document.
-            const evidenceImages = req.files && req.files['evidenceImages'] ? req.files['evidenceImages'].map(file => file.path) : [];
-            const evidenceVideos = req.files && req.files['evidenceVideos'] ? req.files['evidenceVideos'].map(file => file.path) : [];
-            const evidencePdfs = req.files && req.files['evidencePdfs'] ? req.files['evidencePdfs'].map(file => file.path) : [];
-
-            // Basic validation for required fields from the frontend
-            if (!categoryFromFrontend || !detailedDescription) {
-                console.log('Validation Failed: Complaint category or description missing from frontend.');
-                return next(new ErrorResponse('Complaint category and description are required', 400));
+            // Validate required fields
+            if (!title || !description || !category || !locationText) {
+                return next(new ErrorResponse('All required fields must be filled', 400));
             }
 
-            // Construct location object based on frontend input
-            let location = {};
-            if (latitude && longitude) {
-                if (latitude === "" || longitude === "") {
-                    console.log('Validation Failed: GPS coordinates are empty strings.');
-                    return next(new ErrorResponse('Location is required (GPS or manual input)', 400));
+            // Process files
+            const evidenceImages = req.files?.evidenceImages?.map(file => file.path) || [];
+            const evidenceVideos = req.files?.evidenceVideos?.map(file => file.path) || [];
+            const evidenceDocuments = req.files?.evidenceDocuments?.map(file => file.path) || [];
+
+            // Create location object
+            const location = {
+                type: 'Point',
+                coordinates: [0, 0], // Default coordinates
+                address: locationText
+            };
+
+            // Try to parse coordinates if provided
+            if (locationText.includes(',')) {
+                const coords = locationText.split(',').map(Number);
+                if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                    location.coordinates = [coords[1], coords[0]]; // [lng, lat]
                 }
-                location = {
-                    type: 'Point',
-                    coordinates: [parseFloat(longitude), parseFloat(latitude)],
-                    text: locationText || `Lat: ${latitude}, Lon: ${longitude}`
-                };
-            } else if (locationText) {
-                location = {
-                    type: 'Text',
-                    text: locationText
-                };
-            } else {
-                console.log('Validation Failed: No location data provided.');
-                return next(new ErrorResponse('Location is required (GPS or manual input)', 400));
             }
 
-            // Create new complaint using the Complaint model
-            // Mapping frontend fields to Complaint model schema fields:
             const newComplaint = await Complaint.create({
-                user: userId, // Will be null for anonymous submissions, ensure your schema handles this
-                title: categoryFromFrontend, // Frontend 'title' (category) maps to model 'title'
-                description: detailedDescription, // Frontend 'description' maps to model 'description'
-                category: categoryFromFrontend, // Frontend 'title' (category) maps to model 'category'
-                location: location, // Now saving the constructed location object
-                // status defaults to 'pending' as per your schema enum
-                // response is not provided by frontend
-                // createdAt and updatedAt are handled by schema defaults/pre-save hook
-                // evidenceImages, evidenceVideos, evidencePdfs are NOT in your provided schema
-                // and will not be saved unless you add them to your Complaint model.
+                user: req.user?.id,
+                title,
+                description,
+                category,
+                location,
+                evidenceImages,
+                evidenceVideos,
+                evidenceDocuments
             });
-
-            console.log('Complaint successfully created in DB:', newComplaint);
 
             res.status(201).json({
                 success: true,
                 message: 'Complaint submitted successfully!',
-                data: newComplaint // Send the created complaint object
+                data: newComplaint
             });
 
         } catch (err) {
-            console.error('Complaint submission error in handler:', err);
-            // Check for Mongoose validation errors
+            console.error('Complaint submission error:', err);
             if (err.name === 'ValidationError') {
-                const messages = Object.values(err.errors).map(val => val.message);
-                return next(new ErrorResponse(messages.join(', '), 400));
+                return next(new ErrorResponse(Object.values(err.errors).map(e => e.message).join(', '), 400));
             }
-            if (err instanceof multer.MulterError) {
-                return next(new ErrorResponse(`File upload error: ${err.message}`, 400));
-            }
-            next(new ErrorResponse('Complaint submission failed: ' + err.message, 500));
+            next(new ErrorResponse('Complaint submission failed', 500));
         }
     }
 );
@@ -139,10 +245,9 @@ router.get('/my-complaints', authenticate, authorize('citizen'), async (req, res
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        // Fetch actual complaints for the user from the database
         const totalComplaints = await Complaint.countDocuments({ user: userId });
         const complaints = await Complaint.find({ user: userId })
-                                        .sort({ createdAt: -1 }) // Sort by newest first
+                                        .sort({ createdAt: -1 })
                                         .skip(skip)
                                         .limit(limit);
 
@@ -161,7 +266,5 @@ router.get('/my-complaints', authenticate, authorize('citizen'), async (req, res
         next(new ErrorResponse('Could not fetch user complaints', 500));
     }
 });
-
-// You can add more routes here for updating, deleting, or getting single complaint details
 
 module.exports = router;

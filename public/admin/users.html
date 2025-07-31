@@ -3,38 +3,296 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Users</title>
+  <title>Manage Users - Kakamega County</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/shared/base.css">
-  <link rel="stylesheet" href="/assets/css/admin/users.css">
+  <link rel="stylesheet" href="/assets/css/admin/dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Modal specific styles */
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed; /* Stay in place */
+      z-index: 1000; /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%; /* Full width */
+      height: 100%; /* Full height */
+      overflow: auto; /* Enable scroll if needed */
+      background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: auto;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+    }
+    .close-button {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .close-button:hover,
+    .close-button:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+      color: #333;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 0.375rem;
+      box-sizing: border-box; /* Ensures padding doesn't increase width */
+    }
+  </style>
 </head>
-<body>
-  <div class="container">
-    <header class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Manage Users</h1>
-      <button onclick="logout('admin', '/admin/login.html')" class="btn btn-primary">Logout</button>
-    </header>
-    <div class="card">
-      <table class="w-full border-collapse">
-        <thead>
-          <tr class="bg-gray-100">
-            <th class="p-2 text-left">Username</th>
-            <th class="p-2 text-left">Email</th>
-            <th class="p-2 text-left">Role</th>
-          </tr>
-        </thead>
-        <tbody id="users-table"></tbody>
-      </table>
-      <div class="mt-4 flex justify-between">
-        <button id="prev-page" class="btn btn-primary" disabled>Previous</button>
-        <span>Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
-        <button id="next-page" class="btn btn-primary" disabled>Next</button>
+<body class="bg-gray-100">
+  <div class="flex min-h-screen">
+    <aside id="sidebar" class="bg-gradient-to-b from-blue-800 to-blue-600 text-white w-64 fixed top-0 bottom-0 p-4 transform transition-transform duration-300 ease-in-out lg:translate-x-0 -translate-x-full">
+      <div class="flex items-center mb-6">
+        <img src="/assets/images/kakamega-logo.png" alt="Kakamega County Logo" class="h-8 mr-2">
+        <h2 class="text-xl font-bold">Kakamega CMS</h2>
       </div>
+      <nav class="space-y-2">
+        <a href="/admin/dashboard.html" class="flex items-center p-2 rounded hover:bg-blue-900" aria-label="Dashboard">
+          <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+        </a>
+        <a href="/admin/users.html" class="flex items-center p-2 bg-blue-700 rounded hover:bg-blue-900" aria-label="Manage Users">
+          <i class="fas fa-users mr-2"></i> Users
+        </a>
+        <a href="/admin/analytics.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="View Analytics">
+          <i class="fas fa-chart-bar mr-2"></i> Analytics
+        </a>
+        <a href="/admin/complaints.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="Manage Complaints">
+          <i class="fas fa-exclamation-circle mr-2"></i> Complaints
+        </a>
+        <button onclick="logout('admin', '/admin/login.html')" class="flex items-center p-2 w-full text-left hover:bg-blue-900 rounded" aria-label="Logout">
+          <i class="fas fa-sign-out-alt mr-2"></i> Logout
+        </button>
+      </nav>
+    </aside>
+    <main class="flex-1 p-4 lg:ml-64">
+      <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-4 rounded-lg shadow-lg mb-8 flex justify-between items-center">
+        <button id="sidebar-toggle" class="lg:hidden p-2 text-white focus:outline-none" aria-label="Toggle Sidebar">
+          <i class="fas fa-bars text-2xl"></i>
+        </button>
+        <h1 class="text-2xl font-bold flex items-center">
+          <i class="fas fa-users mr-2"></i> Manage Users
+        </h1>
+        <button id="registerStaffBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-200">
+          <i class="fas fa-user-plus mr-2"></i> Register Staff
+        </button>
+      </header>
+      <div class="container">
+        <div class="card dashboard-card">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-3 text-left text-gray-700">Username</th>
+                <th class="p-3 text-left text-gray-700">Email</th>
+                <th class="p-3 text-left text-gray-700">Role</th>
+                <th class="p-3 text-left text-gray-700">Department</th> </tr>
+            </thead>
+            <tbody id="users-table">
+              </tbody>
+          </table>
+          <div class="mt-4 flex justify-between items-center">
+            <button id="prev-page" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>Previous</button>
+            <span class="text-gray-700">Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
+            <button id="next-page" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>Next</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <footer class="bg-gray-800 text-white text-center py-4">
+    <p>&copy; 2025 Kakamega County Complaint Management System. All rights reserved.</p>
+  </footer>
+
+  <div id="registerStaffModal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" id="closeRegisterModal">&times;</span>
+      <h2 class="text-2xl font-bold mb-4">Register New Staff Member</h2>
+      <form id="registerStaffForm">
+        <div class="form-group">
+          <label for="staffUsername">Username</label>
+          <input type="text" id="staffUsername" name="username" required class="mt-1">
+        </div>
+        <div class="form-group">
+          <label for="staffEmail">Email</label>
+          <input type="email" id="staffEmail" name="email" required class="mt-1">
+        </div>
+        <div class="form-group">
+          <label for="staffPassword">Password</label>
+          <input type="password" id="staffPassword" name="password" required class="mt-1">
+        </div>
+        <div class="form-group">
+          <label for="staffDepartment">Department</label>
+          <select id="staffDepartment" name="department" required class="mt-1">
+            <option value="">Select Department</option>
+            </select>
+        </div>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200 w-full">Register Staff</button>
+      </form>
+      <div id="registrationMessage" class="mt-4 text-center"></div>
     </div>
   </div>
+
   <script src="/assets/js/shared/api.js"></script>
   <script src="/assets/js/shared/auth.js"></script>
   <script src="/assets/js/shared/utils.js"></script>
-  <script src="/assets/js/admin/users.js"></script>
+  <script src="/assets/js/admin/users.js"></script> <script>
+    // Sidebar toggle functionality
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.getElementById('sidebar');
+
+    if (sidebarToggle && sidebar) {
+      sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full');
+      });
+    }
+
+    // Modal JavaScript for Register Staff (kept in users.html for direct interaction)
+    const registerStaffModal = document.getElementById('registerStaffModal');
+    const registerStaffBtn = document.getElementById('registerStaffBtn');
+    const closeRegisterModal = document.getElementById('closeRegisterModal');
+    const registerStaffForm = document.getElementById('registerStaffForm');
+    const registrationMessage = document.getElementById('registrationMessage');
+    const staffDepartmentSelect = document.getElementById('staffDepartment'); // GET THE SELECT ELEMENT
+
+    // Function to load departments into the select dropdown
+    // This part stays here as it's directly related to the modal logic in this file.
+    async function loadDepartmentsForStaffRegistration() {
+        try {
+            const response = await adminApiRequest('/departments', 'GET');
+            if (response.success && response.data) {
+                // Clear existing options, keep the default "Select Department"
+                staffDepartmentSelect.innerHTML = '<option value="">Select Department</option>';
+                response.data.forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept._id;
+                    option.textContent = dept.name;
+                    staffDepartmentSelect.appendChild(option);
+                });
+            } else {
+                console.error('Failed to load departments:', response.message);
+                // Display message only if modal is open, or log
+                if (registerStaffModal.style.display === 'flex') {
+                    registrationMessage.textContent = 'Failed to load departments. Please refresh the page.';
+                    registrationMessage.className = 'mt-4 text-center text-red-500';
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching departments:', error);
+            if (registerStaffModal.style.display === 'flex') {
+                registrationMessage.textContent = `Error fetching departments: ${error.message}`;
+                registrationMessage.className = 'mt-4 text-center text-red-500';
+            }
+        }
+    }
+
+    // Open modal
+    registerStaffBtn.addEventListener('click', () => {
+      registerStaffModal.style.display = 'flex'; // Use flex to center
+      registrationMessage.textContent = ''; // Clear previous messages
+      registerStaffForm.reset(); // Clear form fields
+      loadDepartmentsForStaffRegistration(); // Reload departments every time modal opens
+    });
+
+    // Close modal
+    closeRegisterModal.addEventListener('click', () => {
+      registerStaffModal.style.display = 'none';
+    });
+
+    // Close modal if user clicks outside of it
+    window.addEventListener('click', (event) => {
+      if (event.target == registerStaffModal) {
+        registerStaffModal.style.display = 'none';
+      }
+    });
+
+    // Handle staff registration form submission
+    registerStaffForm.addEventListener('submit', async (event) => {
+      event.preventDefault(); // Prevent default form submission
+
+      const username = document.getElementById('staffUsername').value;
+      const email = document.getElementById('staffEmail').value;
+      const password = document.getElementById('staffPassword').value;
+      const department = staffDepartmentSelect.value; // GET SELECTED DEPARTMENT ID
+
+      if (!department) {
+        registrationMessage.textContent = 'Please select a department.';
+        registrationMessage.className = 'mt-4 text-center text-red-500';
+        return;
+      }
+
+      registrationMessage.textContent = 'Registering staff...';
+      registrationMessage.className = 'mt-4 text-center text-blue-600';
+
+      try {
+        const token = getToken(); // Get authentication token
+        if (!token) {
+          registrationMessage.textContent = 'Authentication required. Please log in.';
+          registrationMessage.className = 'mt-4 text-center text-red-500';
+          return;
+        }
+
+        const response = await adminApiRequest('/create-staff', 'POST', {
+          username,
+          email,
+          password,
+          department // SEND DEPARTMENT WITH THE REQUEST
+        });
+
+        if (response.success) {
+          registrationMessage.textContent = 'Staff member registered successfully!';
+          registrationMessage.className = 'mt-4 text-center text-green-600';
+          registerStaffForm.reset(); // Clear form
+          // Call loadUsers from users.js - it should be globally available
+          if (typeof loadUsers === 'function') {
+            loadUsers(); // Refresh the user table
+          } else {
+            console.warn("loadUsers function not found. Table might not refresh.");
+          }
+          // Close modal after a short delay
+          setTimeout(() => {
+            registerStaffModal.style.display = 'none';
+          }, 2000);
+        } else {
+          registrationMessage.textContent = response.message || 'Staff registration failed.';
+          registrationMessage.className = 'mt-4 text-center text-red-500';
+        }
+      } catch (error) {
+        console.error('Staff registration error:', error);
+        registrationMessage.textContent = `Error: ${error.message || 'An unexpected error occurred.'}`;
+        registrationMessage.className = 'mt-4 text-center text-red-500';
+      }
+    });
+
+    // Initial load logic for the page
+    // The loadUsers() call is now in users.js, so this can be simpler
+    document.addEventListener('DOMContentLoaded', () => {
+        // Any other initial setup for users.html that is not handled by users.js
+        // For example, if you had a specific filter or sort that needs to be initialized.
+    });
+
+  </script>
 </body>
 </html>

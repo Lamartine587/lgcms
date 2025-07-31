@@ -3,56 +3,184 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Complaints</title>
+  <title>Admin Dashboard - Manage Complaints</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/shared/base.css">
-  <link rel="stylesheet" href="/assets/css/admin/complaint.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 </head>
-<body>
-  <div class="container">
-    <header class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Manage Complaints</h1>
-      <button onclick="logout('admin', '/admin/login.html')" class="btn btn-primary">Logout</button>
-    </header>
-    <div class="card">
-      <div class="flex space-x-4 mb-4">
-        <select id="status-filter" class="border p-2 rounded">
-          <option value="all">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="in_progress">In Progress</option>
-          <option value="resolved">Resolved</option>
-          <option value="rejected">Rejected</option>
-        </select>
-        <select id="priority-filter" class="border p-2 rounded">
-          <option value="all">All Priorities</option>
-          <option value="Low">Low</option>
-          <option value="Medium">Medium</option>
-          <option value="High">High</option>
-          <option value="Critical">Critical</option>
-        </select>
+<body class="bg-gray-100">
+  <div class="flex min-h-screen">
+    <aside id="sidebar" class="bg-gradient-to-b from-blue-800 to-blue-600 text-white w-64 fixed top-0 bottom-0 p-4 transform transition-transform duration-300 ease-in-out lg:translate-x-0 -translate-x-full">
+      <div class="flex items-center mb-6">
+        <img src="/assets/images/kakamega-logo.png" alt="Kakamega County Logo" class="h-8 mr-2">
+        <h2 class="text-xl font-bold">Kakamega CMS</h2>
       </div>
-      <table class="w-full border-collapse">
-        <thead>
-          <tr class="bg-gray-100">
-            <th class="p-2 text-left">Title</th>
-            <th class="p-2 text-left">Category</th>
-            <th class="p-2 text-left">Status</th>
-            <th class="p-2 text-left">Priority</th>
-            <th class="p-2 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="complaints-table"></tbody>
-      </table>
-      <div class="mt-4 flex justify-between">
-        <button id="prev-page" class="btn btn-primary" disabled>Previous</button>
-        <span>Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
-        <button id="next-page" class="btn btn-primary" disabled>Next</button>
+      <nav class="space-y-2">
+        <a href="/admin/dashboard.html" class="flex items-center p-2 rounded hover:bg-blue-900" aria-label="Dashboard">
+          <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+        </a>
+        <a href="/admin/users.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="Manage Users">
+          <i class="fas fa-users mr-2"></i> Users
+        </a>
+        <a href="/admin/analytics.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="View Analytics">
+          <i class="fas fa-chart-bar mr-2"></i> Analytics
+        </a>
+        <a href="/admin/complaints.html" class="flex items-center p-2 bg-blue-700 rounded hover:bg-blue-900" aria-label="Manage Complaints">
+          <i class="fas fa-exclamation-circle mr-2"></i> Complaints
+        </a>
+        
+        <button onclick="logout('admin', '/admin/login.html')" class="flex items-center p-2 w-full text-left hover:bg-blue-900 rounded" aria-label="Logout">
+          <i class="fas fa-sign-out-alt mr-2"></i> Logout
+        </button>
+      </nav>
+    </aside>
+
+    <main class="flex-1 p-4 lg:ml-64">
+      <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-4 rounded-lg shadow-lg mb-8 flex justify-between items-center">
+        <button id="sidebar-toggle" class="lg:hidden p-2 text-white focus:outline-none" aria-label="Toggle Sidebar">
+          <i class="fas fa-bars text-2xl"></i>
+        </button>
+        <h1 class="text-2xl font-bold flex items-center">
+          <i class="fas fa-clipboard-list mr-2"></i> Manage Complaints
+        </h1>
+        <div class="flex items-center space-x-4 mr-4">
+          <span id="admin-username" class="text-white font-medium text-lg"></span>
+        </div>
+      </header>
+
+      <div class="container mx-auto">
+        <div id="message-container" class="mb-4 hidden">
+          <div id="message-content" class="p-3 rounded-md text-sm"></div>
+        </div>
+
+        <!-- Complaints Management Section -->
+        <div class="card dashboard-card mb-8">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold flex items-center">
+              <i class="fas fa-list-alt text-blue-600 mr-2"></i> Complaints Management
+            </h2>
+            <div class="flex space-x-2">
+              <button id="refresh-complaints" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded flex items-center">
+                <i class="fas fa-sync-alt mr-1"></i> Refresh
+              </button>
+              <button id="export-complaints" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded flex items-center">
+                <i class="fas fa-file-export mr-1"></i> Export
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+            <div class="w-full sm:w-auto">
+              <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-1">Status:</label>
+              <select id="status-filter" class="w-full p-2 border border-gray-300 rounded-md">
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div class="w-full sm:w-auto">
+              <label for="priority-filter" class="block text-sm font-medium text-gray-700 mb-1">Priority:</label>
+              <select id="priority-filter" class="w-full p-2 border border-gray-300 rounded-md">
+                <option value="all">All Priorities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+            <div class="w-full sm:w-auto">
+              <label for="search-complaints" class="block text-sm font-medium text-gray-700 mb-1">Search:</label>
+              <input type="text" id="search-complaints" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Search complaints...">
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="complaints-table-body" class="bg-white divide-y divide-gray-200">
+                <!-- Complaints will be loaded here -->
+                <tr>
+                  <td colspan="8" class="px-3 py-4 text-center text-gray-500">Loading complaints...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex items-center justify-between mt-4">
+            <div class="text-sm text-gray-700">
+              Showing <span id="start-item">0</span> to <span id="end-item">0</span> of <span id="total-items">0</span> complaints
+            </div>
+            <div class="flex space-x-2">
+              <button id="prev-page" class="px-3 py-1 border rounded text-gray-700 disabled:opacity-50" disabled>
+                Previous
+              </button>
+              <span class="px-3 py-1">
+                Page <span id="current-page">1</span> of <span id="total-pages">1</span>
+              </span>
+              <button id="next-page" class="px-3 py-1 border rounded text-gray-700 disabled:opacity-50" disabled>
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- End Complaints Management Section -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Complaint Details Modal -->
+  <div id="complaint-modal" class="fixed inset-0 z-50 overflow-auto bg-gray-900 bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 md:w-3/4 lg:w-2/3 max-h-[90vh] overflow-y-auto relative">
+      <button id="close-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl font-bold leading-none focus:outline-none" aria-label="Close modal">
+        &times;
+      </button>
+      <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Complaint Details</h2>
+      <div id="modal-content" class="space-y-4 text-gray-700">
+        <!-- Modal content will be loaded here -->
       </div>
     </div>
   </div>
+
+  <footer class="bg-gray-800 text-white text-center py-4">
+    <p>&copy; 2025 Kakamega County Complaint Management System. All rights reserved.</p>
+  </footer>
+
   <script src="/assets/js/shared/api.js"></script>
   <script src="/assets/js/shared/auth.js"></script>
   <script src="/assets/js/shared/utils.js"></script>
   <script src="/assets/js/admin/complaints.js"></script>
+  <script>
+    // Sidebar toggle logic
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.getElementById('sidebar');
+
+    if (sidebarToggle && sidebar) {
+      sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full');
+      });
+    }
+
+    // Load admin username if available
+    document.addEventListener('DOMContentLoaded', () => {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      if (userData && userData.username) {
+        document.getElementById('admin-username').textContent = userData.username;
+      }
+    });
+  </script>
 </body>
 </html>

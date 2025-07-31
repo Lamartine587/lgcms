@@ -1,45 +1,109 @@
 // models/Complaint.js
 const mongoose = require('mongoose');
 
-const complaintSchema = new mongoose.Schema({
-    title: { type: String, required: true }, // This maps to description from frontend
-    description: { type: String, required: true }, // This maps to category from frontend
-    category: { type: String, required: true }, // This maps to title from frontend
-    status: { 
-        type: String, 
-        enum: ['pending', 'in_progress', 'resolved'], 
-        default: 'pending' 
+const ComplaintSchema = new mongoose.Schema({
+    category: {
+        type: String,
+        required: [true, 'Please add a category'],
+        enum: [
+            'Roads', 'Water', 'Sanitation', 'Health', 'Education', 
+            'Security', 'Public Safety', 'Electricity Outage', 
+            'Waste Management', 'Traffic Management', 'Housing', 
+            'Environment', 'Drainage Issues', 'Public Transport', 
+            'Community Development', 'Other', 'Dangerous Intersection'  // Added this
+        ]
     },
-    response: { type: String },
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // Changed to default: null for optional anonymous submissions
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
-    // ADDED LOCATION FIELD
     location: {
         type: {
             type: String,
-            enum: ['Point', 'Text'], // 'Point' for GPS, 'Text' for manual location text
-            required: true // Location is required for a complaint
+            enum: ['Point'],  // Only 'Point' is allowed
+            required: true
         },
-        coordinates: { // For 'Point' type (GPS)
-            type: [Number], // [longitude, latitude]
-            index: '2dsphere' // Geospatial index for efficient location queries
+        coordinates: {
+            type: [Number],
+            required: function() {
+                return this.location.type === 'Point';
+            }
         },
-        text: { // For 'Text' type or descriptive text for Point
+        address: {
             type: String,
-            maxlength: [200, 'Location text cannot be more than 200 characters']
+            required: true
         }
     },
-    // If you also want to save evidence files, uncomment these lines:
-    // evidenceImages: [String], // Array of file paths
-    // evidenceVideos: [String], // Array of file paths
-    // evidencePdfs: [String],   // Array of file paths
+    description: {
+        type: String,
+        required: [true, 'Please add a description']
+    },
+    category: {
+        type: String,
+        required: [true, 'Please add a category'],
+        // FIX: Added 'Electricity Outage' to the enum for category
+        enum: ['Roads', 'Water', 'Sanitation', 'Health', 'Education', 'Security', 'Other', 'Public Safety', 'Electricity Outage', 'Waste Management', 'Traffic Management', 'Housing', 'Environment', 'Drainage Issues', 'Public Transport', 'Community Development']
+    },
+    status: {
+        type: String,
+        enum: ['Pending','pending', 'In Progress', 'Resolved', 'Rejected'],
+        default: 'Pending'
+    },
+    priority: {
+        type: String,
+        enum: ['Low', 'Medium', 'High', 'Critical'],
+        default: 'Medium'
+    },
+    user: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    assignedTo: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number],
+            index: '2dsphere'
+        },
+        address: String
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    },
+    resolvedAt: Date,
+    evidenceImages: [String],
+evidenceVideos: [String],
+evidenceDocuments: [String], // Changed from evidencePdfs
+    responseHistory: [
+        {
+            responder: String,
+            text: String,
+            timestamp: {
+                type: Date,
+                default: Date.now
+            }
+        }
+    ]
 });
 
-// Update the updatedAt field before saving
-complaintSchema.pre('save', function(next) {
+ComplaintSchema.pre('save', function(next) {
+    if (this.isModified('status') && this.status === 'Resolved' && !this.resolvedAt) {
+        this.resolvedAt = Date.now();
+    } else if (this.isModified('status') && this.status !== 'Resolved' && this.resolvedAt) {
+        this.resolvedAt = undefined;
+    }
     this.updatedAt = Date.now();
     next();
 });
 
-module.exports = mongoose.model('Complaint', complaintSchema);
+module.exports = mongoose.model('Complaint', ComplaintSchema);

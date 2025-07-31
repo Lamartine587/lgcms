@@ -31,13 +31,10 @@
         <a href="/admin/complaints.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="Manage Complaints">
           <i class="fas fa-exclamation-circle mr-2"></i> Complaints
         </a>
-        <a href="/admin/settings.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="Settings">
-          <i class="fas fa-cog mr-2"></i> Settings
-        </a>
         <button onclick="generateInviteCode()" class="flex items-center p-2 w-full text-left hover:bg-blue-900 rounded" aria-label="Generate Invite Code">
           <i class="fas fa-key mr-2"></i> Invite Code
         </button>
-        <button onclick="logout('admin', '/admin/login.html')" class="flex items-center p-2 w-full text-left hover:bg-blue-900 rounded" aria-label="Logout">
+        <button onclick="logout('admin', '/index.html')" class="flex items-center p-2 w-full text-left hover:bg-blue-900 rounded" aria-label="Logout">
           <i class="fas fa-sign-out-alt mr-2"></i> Logout
         </button>
       </nav>
@@ -53,33 +50,6 @@
         </h1>
       </header>
       <div class="container">
-        <!-- Quick Stats -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div class="card dashboard-card">
-            <h2 class="text-lg font-semibold flex items-center">
-              <i class="fas fa-users text-blue-600 mr-2"></i> Total Users
-            </h2>
-            <p id="total-users" class="text-3xl font-bold text-blue-600" aria-live="polite">0</p>
-          </div>
-          <div class="card dashboard-card">
-            <h2 class="text-lg font-semibold flex items-center">
-              <i class="fas fa-exclamation-circle text-blue-600 mr-2"></i> Active Complaints
-            </h2>
-            <p id="active-complaints" class="text-3xl font-bold text-blue-600" aria-live="polite">0</p>
-          </div>
-          <div class="card dashboard-card">
-            <h2 class="text-lg font-semibold flex items-center">
-              <i class="fas fa-check-circle text-blue-600 mr-2"></i> Resolved Cases
-            </h2>
-            <p id="resolved-cases" class="text-3xl font-bold text-blue-600" aria-live="polite">0</p>
-          </div>
-          <div class="card dashboard-card">
-            <h2 class="text-lg font-semibold flex items-center">
-              <i class="fas fa-clock text-blue-600 mr-2"></i> Avg Resolution Time
-            </h2>
-            <p id="avg-resolution-time" class="text-3xl font-bold text-blue-600" aria-live="polite">0 hrs</p>
-          </div>
-        </div>
         <!-- Charts and Activity -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="card dashboard-card">

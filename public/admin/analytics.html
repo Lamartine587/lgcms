@@ -3,131 +3,248 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analytics - Kakamega County</title>
+  <title>Admin Dashboard - Analytics</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/shared/base.css">
-  <link rel="stylesheet" href="/assets/css/admin/analytics.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.min.js"></script> <!-- Corrected URL -->
+  <style>
+    canvas {
+      max-height: 450px !important;
+      object-fit: contain !important;
+    }
+  </style>
 </head>
 <body class="bg-gray-100">
-  <nav class="bg-white shadow py-4">
-    <div class="container flex justify-between items-center">
-      <div class="flex items-center">
+  <div class="flex min-h-screen">
+    <aside id="sidebar" class="bg-gradient-to-b from-blue-800 to-blue-600 text-white w-64 fixed top-0 bottom-0 p-4 transform transition-transform duration-300 ease-in-out lg:translate-x-0 -translate-x-full">
+      <div class="flex items-center mb-6">
         <img src="/assets/images/kakamega-logo.png" alt="Kakamega County Logo" class="h-8 mr-2">
-        <h1 class="text-xl font-bold text-gray-800">Kakamega CMS</h1>
+        <h2 class="text-xl font-bold">Kakamega CMS</h2>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <a href="/index.html" class="btn btn-primary mr-2" aria-label="Home">
-          <i class="fas fa-home mr-1"></i> Home
+      <nav class="space-y-2">
+        <a href="/admin/dashboard.html" class="flex items-center p-2 rounded hover:bg-blue-900" aria-label="Dashboard">
+          <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
         </a>
-        <a href="/admin/dashboard.html" class="btn btn-primary mr-2" aria-label="Admin Dashboard">
-          <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+        <a href="/admin/users.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="Manage Users">
+          <i class="fas fa-users mr-2"></i> Users
         </a>
-        <a href="/admin/users.html" class="btn btn-primary mr-2" aria-label="Manage Users">
-          <i class="fas fa-users mr-1"></i> Users
+        <a href="/admin/analytics.html" class="flex items-center p-2 bg-blue-700 rounded hover:bg-blue-900" aria-label="View Analytics">
+          <i class="fas fa-chart-bar mr-2"></i> Analytics
         </a>
-        <a href="/admin/complaints.html" class="btn btn-primary mr-2" aria-label="Manage Complaints">
-          <i class="fas fa-exclamation-circle mr-1"></i> Complaints
+        <a href="/admin/complaints.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="Manage Complaints">
+          <i class="fas fa-exclamation-circle mr-2"></i> Complaints
         </a>
-        <a href="/admin/settings.html" class="btn btn-primary mr-2" aria-label="Settings">
-          <i class="fas fa-cog mr-1"></i> Settings
-        </a>
-        <button onclick="logout('admin', '/admin/login.html')" class="btn btn-primary" aria-label="Logout">
-          <i class="fas fa-sign-out-alt mr-1"></i> Logout
+        <button onclick="logout('admin', '/admin/login.html')" class="flex items-center p-2 w-full text-left hover:bg-blue-900 rounded" aria-label="Logout">
+          <i class="fas fa-sign-out-alt mr-2"></i> Logout
         </button>
+      </nav>
+    </aside>
+
+    <main class="flex-1 p-4 lg:ml-64">
+      <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-4 rounded-lg shadow-lg mb-8 flex justify-between items-center">
+        <button id="sidebar-toggle" class="lg:hidden p-2 text-white focus:outline-none" aria-label="Toggle Sidebar">
+          <i class="fas fa-bars text-2xl"></i>
+        </button>
+        <h1 class="text-2xl font-bold flex items-center">
+          <i class="fas fa-chart-bar mr-2"></i> Analytics
+        </h1>
+        <div class="flex items-center space-x-4 mr-4">
+          <span id="admin-username" class="text-white font-medium text-lg"></span>
+        </div>
+      </header>
+
+      <div class="container mx-auto">
+        <div id="message-container" class="mb-4 hidden">
+          <div id="message-content" class="p-3 rounded-md text-sm"></div>
+        </div>
+
+        <!-- Analytics Dashboard Content -->
+        <div class="space-y-8">
+          <!-- Dashboard Cards -->
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="card dashboard-card p-4">
+              <h3 class="text-md font-semibold flex items-center">
+                <i class="fas fa-chart-line text-blue-600 mr-2"></i> Complaint Volume
+              </h3>
+              <p id="complaint-volume" class="text-2xl font-bold mt-2">0</p>
+              <p id="volume-change" class="text-sm text-gray-600 mt-1">Change: N/A</p>
+            </div>
+            <div class="card dashboard-card p-4">
+              <h3 class="text-md font-semibold flex items-center">
+                <i class="fas fa-stopwatch text-blue-600 mr-2"></i> Avg. Resolution Time
+              </h3>
+              <p id="avg-resolution" class="text-2xl font-bold mt-2">0 days</p>
+              <p id="resolution-change" class="text-sm text-gray-600 mt-1">Change: N/A</p>
+            </div>
+            <div class="card dashboard-card p-4">
+              <h3 class="text-md font-semibold flex items-center">
+                <i class="fas fa-star text-blue-600 mr-2"></i> Satisfaction Rate
+              </h3>
+              <p id="satisfaction-rate" class="text-2xl font-bold mt-2">N/A</p>
+              <p id="feedback-count" class="text-sm text-gray-600 mt-1">Feedback: 0</p>
+            </div>
+            <div class="card dashboard-card p-4">
+              <h3 class="text-md font-semibold flex items-center">
+                <i class="fas fa-building text-blue-600 mr-2"></i> Hotspot Dept.
+              </h3>
+              <p id="hotspot-dept" class="text-2xl font-bold mt-2">None</p>
+              <p id="hotspot-count" class="text-sm text-gray-600 mt-1">Count: 0</p>
+            </div>
+          </div>
+
+          <!-- Charts Section -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="card dashboard-card h-[500px]">
+              <h2 class="text-lg font-semibold mb-4 flex items-center justify-between">
+                <span><i class="fas fa-chart-area text-blue-600 mr-2"></i> Complaint Trends</span>
+                <div class="flex space-x-2">
+                  <button class="chart-toggle active" data-chart="trends" data-type="line">Line</button>
+                  <button class="chart-toggle" data-chart="trends" data-type="bar">Bar</button>
+                </div>
+              </h2>
+              <canvas id="trends-chart" aria-label="Complaint Trends Over Time" style="width: 100%; height: 450px;"></canvas>
+            </div>
+            <div class="card dashboard-card h-[500px]">
+              <h2 class="text-lg font-semibold mb-4 flex items-center justify-between">
+                <span><i class="fas fa-chart-pie text-blue-600 mr-2"></i> Department Distribution</span>
+                <div class="flex space-x-2">
+                  <button class="chart-toggle active" data-chart="department" data-type="pie">Pie</button>
+                  <button class="chart-toggle" data-chart="department" data-type="doughnut">Doughnut</button>
+                </div>
+              </h2>
+              <canvas id="department-chart" aria-label="Complaints by Department" style="width: 100%; height: 450px;"></canvas>
+            </div>
+            <div class="card dashboard-card h-[500px]">
+              <h2 class="text-lg font-semibold mb-4 flex items-center">
+                <i class="fas fa-chart-bar text-blue-600 mr-2"></i> Status Distribution
+              </h2>
+              <canvas id="status-chart" aria-label="Complaint Status Distribution" style="width: 100%; height: 450px;"></canvas>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="card dashboard-card h-[500px]">
+              <h2 class="text-lg font-semibold mb-4 flex items-center">
+                <i class="fas fa-users text-blue-600 mr-2"></i> User Role Distribution
+              </h2>
+              <canvas id="role-chart" aria-label="User Role Distribution" style="width: 100%; height: 450px;"></canvas>
+            </div>
+            <div class="card dashboard-card h-[500px]">
+              <h2 class="text-lg font-semibold mb-4 flex items-center">
+                <i class="fas fa-stopwatch text-blue-600 mr-2"></i> Resolution Time Distribution
+              </h2>
+              <canvas id="resolution-time-chart" aria-label="Resolution Time Distribution" style="width: 100%; height: 450px;"></canvas>
+            </div>
+          </div>
+
+          <!-- Map Section -->
+          <div class="card dashboard-card w-full h-[500px]">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+              <i class="fas fa-map-marked-alt text-blue-600 mr-2"></i> Geographic Heatmap
+            </h2>
+            <div id="heatmap-map" class="w-full h-full rounded-md z-0"></div>
+          </div>
+
+          <!-- Date Filter Form -->
+          <form id="date-filter-form" class="mb-6 bg-white p-4 rounded-md shadow">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="start-date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                <input type="date" id="start-date" name="start-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+              </div>
+              <div>
+                <label for="end-date" class="block text-sm font-medium text-gray-700">End Date</label>
+                <input type="date" id="end-date" name="end-date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+              </div>
+            </div>
+            <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Filter</button>
+            <button type="button" id="refresh-btn" class="mt-4 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 ml-2">Refresh</button>
+          </form>
+
+          <!-- Prediction Form -->
+          <form id="prediction-form" class="bg-white p-4 rounded-md shadow mb-6">
+            <h2 class="text-lg font-semibold mb-4">Predict Resolution Time</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="description-length" class="block text-sm font-medium text-gray-700">Description Length</label>
+                <input type="number" id="description-length" name="description-length" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" min="0" value="100">
+              </div>
+              <div>
+                <label for="evidence-files" class="block text-sm font-medium text-gray-700">Evidence Files</label>
+                <input type="number" id="evidence-files" name="evidence-files" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" min="0" value="1">
+              </div>
+              <div>
+                <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                <select id="category" name="category" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                  <option value="Water">Water</option>
+                  <option value="Roads">Roads</option>
+                </select>
+              </div>
+              <div>
+                <label for="priority" class="block text-sm font-medium text-gray-700">Priority</label>
+                <select id="priority" name="priority" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                  <option value="Critical">Critical</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Predict</button>
+            <p id="prediction-result" class="mt-2 text-gray-700 hidden"></p>
+          </form>
+
+          <!-- Retrain Button -->
+          <button onclick="retrainModel()" class="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 mb-8">Retrain Model</button>
+        </div>
+        <!-- End Analytics Dashboard Content -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Complaint Details Modal (kept for consistency with template, though not used here) -->
+  <div id="complaint-modal" class="fixed inset-0 z-50 overflow-auto bg-gray-900 bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 md:w-3/4 lg:w-2/3 max-h-[90vh] overflow-y-auto relative">
+      <button id="close-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl font-bold leading-none focus:outline-none" aria-label="Close modal">
+        &times;
+      </button>
+      <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Complaint Details</h2>
+      <div id="modal-content" class="space-y-4 text-gray-700">
+        <!-- Modal content will be loaded here -->
       </div>
     </div>
-  </nav>
-  <main class="container py-8">
-    <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-6 rounded-lg shadow-lg mb-8">
-      <h1 class="text-3xl font-bold text-center flex items-center justify-center">
-        <i class="fas fa-chart-bar mr-2"></i> Analytics Dashboard
-      </h1>
-    </header>
-    <div class="card analytics-card mb-6">
-      <h2 class="text-lg font-semibold mb-4 flex items-center">
-        <i class="fas fa-filter text-blue-600 mr-2"></i> Date Range Filter
-      </h2>
-      <form id="date-filter-form" class="flex flex-col sm:flex-row gap-4">
-        <input type="date" id="start-date" required class="p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
-        <input type="date" id="end-date" required class="p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
-        <button type="submit" class="btn btn-primary">Apply Filter</button>
-      </form>
-    </div>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="card analytics-card">
-        <h2 class="text-lg font-semibold mb-4 flex items-center">
-          <i class="fas fa-chart-pie text-blue-600 mr-2"></i> Complaint Status Distribution
-        </h2>
-        <canvas id="status-chart" aria-label="Complaint Status Distribution Chart"></canvas>
-      </div>
-      <div class="card analytics-card">
-        <h2 class="text-lg font-semibold mb-4 flex items-center">
-          <i class="fas fa-chart-line text-blue-600 mr-2"></i> Complaint Trends
-        </h2>
-        <canvas id="trends-chart" aria-label="Complaint Trends Chart"></canvas>
-      </div>
-      <div class="card analytics-card">
-        <h2 class="text-lg font-semibold mb-4 flex items-center">
-          <i class="fas fa-user-tag text-blue-600 mr-2"></i> User Role Distribution
-        </h2>
-        <canvas id="role-chart" aria-label="User Role Distribution Chart"></canvas>
-      </div>
-      <div class="card analytics-card">
-        <h2 class="text-lg font-semibold mb-4 flex items-center">
-          <i class="fas fa-clock text-blue-600 mr-2"></i> Resolution Time Distribution
-        </h2>
-        <canvas id="resolution-time-chart" aria-label="Resolution Time Distribution Chart"></canvas>
-      </div>
-    </div>
-    <div class="card analytics-card mt-6">
-      <h2 class="text-lg font-semibold mb-4 flex items-center">
-        <i class="fas fa-magic text-blue-600 mr-2"></i> Predict Resolution Time
-      </h2>
-      <form id="prediction-form" class="space-y-4">
-        <div>
-          <label for="description-length" class="block text-sm font-medium text-gray-700">Description Length (words)</label>
-          <input type="number" id="description-length" placeholder="Enter word count" required min="0"
-                 class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
-        </div>
-        <div>
-          <label for="evidence-files" class="block text-sm font-medium text-gray-700">Number of Evidence Files</label>
-          <input type="number" id="evidence-files" placeholder="Enter number of files" required min="0"
-                 class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
-        </div>
-        <div>
-          <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
-          <select id="category" required class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
-            <option value="" disabled selected>Select Category</option>
-            <option value="Road Issue">Road Issue</option>
-            <option value="Sanitation">Sanitation</option>
-            <option value="Public Safety">Public Safety</option>
-            <option value="Health">Health</option>
-            <option value="Education">Education</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div>
-          <label for="priority" class="block text-sm font-medium text-gray-700">Priority</label>
-          <select id="priority" required class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600" aria-required="true">
-            <option value="" disabled selected>Select Priority</option>
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Critical">Critical</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary w-full">Predict Resolution Time</button>
-      </form>
-      <p id="prediction-result" class="mt-4 hidden alert" aria-live="polite"></p>
-    </div>
-  </main>
+  </div>
+
   <footer class="bg-gray-800 text-white text-center py-4">
     <p>&copy; 2025 Kakamega County Complaint Management System. All rights reserved.</p>
   </footer>
+
   <script src="/assets/js/shared/api.js"></script>
   <script src="/assets/js/shared/auth.js"></script>
+  <script src="/assets/js/shared/utils.js"></script>
   <script src="/assets/js/admin/analytics.js"></script>
+  <script>
+    // Sidebar toggle logic
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.getElementById('sidebar');
+
+    if (sidebarToggle && sidebar) {
+      sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full');
+      });
+    }
+
+    // Load admin username if available
+    document.addEventListener('DOMContentLoaded', () => {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      if (userData && userData.username) {
+        document.getElementById('admin-username').textContent = userData.username;
+      }
+    });
+  </script>
 </body>
 </html>

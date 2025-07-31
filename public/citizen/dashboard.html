@@ -4,38 +4,231 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Citizen Dashboard</title>
+  <!-- Tailwind CSS CDN for modern styling - changed to cdn.jsdelivr.net to comply with CSP -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/shared/base.css">
-  <link rel="stylesheet" href="/assets/css/citizen/dashboard.css">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Custom styles for the Inter font and card aesthetics */
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f3f4f6; /* Light gray background */
+    }
+    .card {
+      background-color: #ffffff;
+      border-radius: 0.75rem; /* Rounded corners */
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Subtle shadow */
+      padding: 1.5rem;
+      transition: transform 0.2s ease-in-out;
+    }
+    .card:hover {
+      transform: translateY(-5px); /* Slight lift on hover */
+    }
+    .btn-primary {
+      background-image: linear-gradient(to right, #3b82f6, #2563eb); /* Blue gradient for primary button */
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      transition: background-color 0.2s ease-in-out;
+    }
+    .btn-primary:hover {
+      background-image: linear-gradient(to right, #2563eb, #1d4ed8); /* Darker gradient on hover */
+    }
+    /* Sidebar specific styles */
+    #sidebar {
+      z-index: 1000; /* Ensure sidebar is on top */
+    }
+    /* Responsive adjustments for smaller screens */
+    @media (max-width: 768px) {
+      .header-title {
+        font-size: 1.5rem; /* Smaller title on mobile */
+      }
+      .card-value {
+        font-size: 1.875rem; /* Smaller numbers on mobile */
+      }
+      #sidebar.translate-x-0 {
+        box-shadow: 0 0 15px rgba(0,0,0,0.3); /* Shadow when open on mobile */
+      }
+    }
+  </style>
 </head>
-<body>
-  <div class="container">
-    <header class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Citizen Dashboard</h1>
-      <button onclick="logout('/citizen/login.html')" class="btn btn-primary">Logout</button>
-    </header>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="card">
-        <h2 class="text-lg font-semibold">Total Complaints</h2>
-        <p id="total-complaints" class="text-2xl">0</p>
+<body class="bg-gray-100">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="bg-gradient-to-b from-blue-800 to-blue-600 text-white w-64 fixed top-0 bottom-0 p-4 transform transition-transform duration-300 ease-in-out lg:translate-x-0 -translate-x-full">
+      <div class="flex items-center mb-6">
+        <!-- Placeholder for a citizen-specific logo or icon -->
+        <i class="fas fa-user-circle text-3xl mr-2"></i>
+        <h2 class="text-xl font-bold">Citizen CMS</h2>
       </div>
-      <div class="card">
-        <h2 class="text-lg font-semibold">Pending Complaints</h2>
-        <p id="pending-complaints" class="text-2xl">0</p>
+      <nav class="space-y-2">
+        <a href="/citizen/dashboard.html" class="flex items-center p-2 bg-blue-700 rounded hover:bg-blue-900" aria-label="Dashboard">
+          <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+        </a>
+        <a href="/citizen/new-complaint.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="New Complaint">
+          <i class="fas fa-plus-circle mr-2"></i> New Complaint
+        </a>
+        <a href="/citizen/my-complaints.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="My Complaints">
+          <i class="fas fa-list-alt mr-2"></i> My Complaints
+        </a>
+        <button onclick="logout('/citizen/login.html')" class="flex items-center p-2 w-full text-left hover:bg-blue-900 rounded" aria-label="Logout">
+          <i class="fas fa-sign-out-alt mr-2"></i> Logout
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-4 lg:ml-64">
+      <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-4 px-6 rounded-lg shadow-lg mb-8 flex justify-between items-center">
+        <button id="sidebar-toggle" class="lg:hidden p-2 text-white focus:outline-none" aria-label="Toggle Sidebar">
+          <i class="fas fa-bars text-2xl"></i>
+        </button>
+        <h1 class="text-2xl font-bold flex items-center header-title">
+          <i class="fas fa-user-circle mr-3"></i> Citizen Dashboard
+        </h1>
+      </header>
+
+      <!-- Complaint Statistics Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="card flex flex-col items-center text-center">
+          <div class="text-blue-600 text-4xl mb-3">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
+          <h2 class="text-xl font-semibold text-gray-700 mb-2">Total Complaints</h2>
+          <p id="total-complaints" class="text-4xl font-bold text-gray-900 card-value">0</p>
+        </div>
+        <div class="card flex flex-col items-center text-center">
+          <div class="text-yellow-500 text-4xl mb-3">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <h2 class="text-xl font-semibold text-gray-700 mb-2">Pending Complaints</h2>
+          <p id="pending-complaints" class="text-4xl font-bold text-gray-900 card-value">0</p>
+        </div>
+        <div class="card flex flex-col items-center text-center">
+          <div class="text-green-500 text-4xl mb-3">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <h2 class="text-xl font-semibold text-gray-700 mb-2">Resolved Complaints</h2>
+          <p id="resolved-complaints" class="text-4xl font-bold text-gray-900 card-value">0</p>
+        </div>
       </div>
-      <div class="card">
-        <h2 class="text-lg font-semibold">Resolved Complaints</h2>
-        <p id="resolved-complaints" class="text-2xl">0</p>
+
+      <!-- Recent Complaints Section -->
+      <div class="card p-6">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-5 flex items-center">
+          <i class="fas fa-history text-blue-600 mr-3"></i> Recent Complaints
+        </h2>
+        <ul id="recent-complaints" class="space-y-4">
+          <!-- Complaint items will be dynamically loaded here -->
+        </ul>
+        <div id="no-complaints-message" class="text-center text-gray-500 mt-6 hidden">
+          No recent complaints to display.
+        </div>
       </div>
-    </div>
-    <div class="card mt-6">
-      <h2 class="text-lg font-semibold mb-4">Recent Complaints</h2>
-      <ul id="recent-complaints" class="space-y-2"></ul>
-    </div>
+    </main>
   </div>
+
+  <!-- Footer Section -->
+  <footer class="bg-gray-800 text-white text-center py-4 mt-8">
+    <p>&copy; 2025 Citizen Complaint Management System. All rights reserved.</p>
+  </footer>
+
+  <!-- JavaScript files for API, Auth, and Utils -->
   <script src="/assets/js/shared/api.js"></script>
   <script src="/assets/js/shared/auth.js"></script>
   <script src="/assets/js/shared/utils.js"></script>
-  <script src="/assets/js/citizen/dashboard.js"></script>
+
+  <!-- Main dashboard functionality -->
+  <script>
+    // Main dashboard logic
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Sidebar toggle logic
+      const sidebar = document.getElementById('sidebar');
+      const sidebarToggle = document.getElementById('sidebar-toggle');
+
+      sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full');
+      });
+
+      // Close sidebar when clicking outside on small screens
+      document.addEventListener('click', (event) => {
+        if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target) && window.innerWidth < 1024) {
+          sidebar.classList.add('-translate-x-full');
+        }
+      });
+
+      // Fetch and display dashboard data
+      const token = getToken(); // Assuming getToken() is available from /assets/js/shared/auth.js
+      if (!token) {
+        window.location.href = '/citizen/login.html';
+        return;
+      }
+
+      const totalComplaintsElem = document.getElementById('total-complaints');
+      const pendingComplaintsElem = document.getElementById('pending-complaints');
+      const resolvedComplaintsElem = document.getElementById('resolved-complaints');
+      const recentComplaintsList = document.getElementById('recent-complaints');
+      const noComplaintsMessage = document.getElementById('no-complaints-message');
+
+      try {
+        // Use the new api.getCitizenDashboardStats() function
+        const stats = await api.getCitizenDashboardStats();
+
+        if (stats && stats.data) {
+          totalComplaintsElem.textContent = stats.data.totalComplaints || 0;
+          pendingComplaintsElem.textContent = stats.data.pendingComplaints || 0;
+          resolvedComplaintsElem.textContent = stats.data.resolvedComplaints || 0;
+
+          if (stats.data.recentComplaints && stats.data.recentComplaints.length > 0) {
+            recentComplaintsList.innerHTML = ''; // Clear existing content
+            stats.data.recentComplaints.forEach(complaint => {
+              const listItem = document.createElement('li');
+              const statusColor = complaint.status === 'Pending' ? 'text-yellow-800 bg-yellow-200' : 'text-green-800 bg-green-200';
+              listItem.className = 'flex items-center p-3 bg-gray-50 rounded-md shadow-sm';
+              listItem.innerHTML = `
+                <span class="text-sm font-medium text-gray-500 mr-4 w-20 flex-shrink-0">${formatDate(complaint.createdAt)}</span>
+                <span class="text-gray-800 flex-grow">${complaint.title}</span>
+                <span class="ml-4 px-3 py-1 text-xs font-semibold ${statusColor} rounded-full">${complaint.status}</span>
+              `;
+              recentComplaintsList.appendChild(listItem);
+            });
+            noComplaintsMessage.classList.add('hidden'); // Hide "No complaints" message
+          } else {
+            recentComplaintsList.innerHTML = '';
+            noComplaintsMessage.classList.remove('hidden'); // Show "No complaints" message
+          }
+        } else {
+            // Handle case where stats or stats.data is null/undefined
+            totalComplaintsElem.textContent = 0;
+            pendingComplaintsElem.textContent = 0;
+            resolvedComplaintsElem.textContent = 0;
+            recentComplaintsList.innerHTML = '';
+            noComplaintsMessage.classList.remove('hidden');
+            noComplaintsMessage.textContent = 'No dashboard data available.';
+        }
+
+      } catch (error) {
+        console.error('Error fetching complaints:', error);
+        // Display a user-friendly error message using displayError (from api.js)
+        displayError(error.message || 'Failed to load dashboard data. Please try again later.');
+        noComplaintsMessage.classList.remove('hidden');
+        noComplaintsMessage.textContent = 'Failed to load complaints. Please try again later.';
+      }
+    });
+
+    // Global logout function for the button
+    function logout(redirectPath) {
+      // Assuming logout is available from /assets/js/shared/auth.js
+      // The actual logout function would typically clear the token and redirect
+      const token = getToken(); // Get token before attempting logout
+      if (token) {
+        // In a real application, you might call an API to invalidate the token
+        // For now, simulate clearing the token
+        localStorage.removeItem('authToken'); // Example: clear token from local storage
+      }
+      window.location.href = redirectPath;
+    }
+  </script>
 </body>
 </html>

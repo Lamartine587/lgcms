@@ -15,7 +15,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function loadUsers(page = 1) {
     try {
-      const data = await apiRequest(`/admin/users?page=${page}`, 'GET', null, token);
+      // CHANGE THIS LINE:
+      // From: const data = await apiRequest(`/admin/users?page=${page}`, 'GET', null, token);
+      // To:
+      const data = await adminApiRequest(`/users?page=${page}`, 'GET', null, token);
+      
       usersTable.innerHTML = '';
       data.data.users.forEach(user => {
         const tr = document.createElement('tr');

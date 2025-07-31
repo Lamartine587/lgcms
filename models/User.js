@@ -89,5 +89,33 @@ userSchema.methods.toJSON = function() {
   delete user.createdAt; // Exclude createdAt from API responses
   return user;
 };
+// Add to your existing User model:
+
+// Generate authentication token
+userSchema.methods.generateAuthToken = function() {
+  return jwt.sign(
+    { 
+      id: this._id,
+      userId: this.userId,
+      role: this.role,
+      department: this.department 
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRE || '30d' }
+  );
+};
+
+// Get user profile without sensitive data
+userSchema.methods.getProfile = function() {
+  return {
+    userId: this.userId,
+    username: this.username,
+    email: this.email,
+    role: this.role,
+    avatar: this.avatar,
+    department: this.department,
+    createdAt: this.createdAt
+  };
+};
 
 module.exports = mongoose.model('User', userSchema);

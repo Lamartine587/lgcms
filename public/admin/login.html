@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Login</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/shared/base.css">
   <link rel="stylesheet" href="/assets/css/shared/auth.css">
 </head>
 <body>
   <div class="auth-container">
     <div class="auth-card">
       <h2>Admin Login</h2>
+      <div id="error-message" class="alert hidden"></div>
       <form id="login-form">
         <input type="email" id="email" placeholder="Email" required>
         <input type="password" id="password" placeholder="Password" required>
@@ -20,14 +20,38 @@
       <p class="mt-4 text-center">Need an account? <a href="/admin/register.html" class="text-blue-600">Register</a></p>
     </div>
   </div>
+
   <script src="/assets/js/shared/api.js"></script>
-  <script src="/assets/js/shared/auth.js"></script>
   <script>
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-      await login(email, password, 'admin', '/admin/dashboard.html');
+      const errorElement = document.getElementById('error-message');
+      
+      try {
+        const response = await fetch('http://localhost:5000/api/admin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Login failed');
+        }
+
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          window.location.href = '/admin/dashboard.html';
+        }
+      } catch (error) {
+        errorElement.textContent = error.message;
+        errorElement.classList.remove('hidden');
+      }
     });
   </script>
 </body>

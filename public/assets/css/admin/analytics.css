@@ -133,3 +133,24 @@ form select:focus {
     grid-template-columns: 1fr;
   }
 }
+.dashboard-card {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    position: relative; /* Ensure proper containment */
+}
+
+canvas {
+    width: 100% !important;
+    height: 450px !important; /* Match inline style, leave room for title */
+    max-height: 450px !important; /* Prevent stretching beyond container */
+    object-fit: contain; /* Ensure content fits within bounds */
+}
+
+#heatmap-map {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 500px; /* Match card height for consistency */
+}
