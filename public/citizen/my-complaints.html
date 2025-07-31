@@ -45,29 +45,18 @@
     }
     /* Status badges */
     .status-badge {
-      display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.25rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px; /* Pill shape */
+        font-size: 0.75rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: white;
     }
-    .status-pending {
-      background-color: #fef3c7;
-      color: #92400e;
-    }
-    .status-in-progress {
-      background-color: #bfdbfe;
-      color: #1e40af;
-    }
-    .status-resolved {
-      background-color: #d1fae5;
-      color: #065f46;
-    }
-    .status-rejected {
-      background-color: #fee2e2;
-      color: #991b1b;
-    }
+    .status-pending { background-color: #f59e0b; /* Amber */ }
+    .status-in-progress { background-color: #3b82f6; /* Blue */ }
+    .status-resolved { background-color: #10b981; /* Green */ }
+    .status-rejected { background-color: #ef4444; /* Red */ }
+    .status-closed { background-color: #6b7280; /* Gray */ }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
@@ -106,32 +95,17 @@
       </header>
 
       <div class="card p-6">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-semibold text-gray-800">Your Submitted Complaints</h2>
-          <div class="flex space-x-2">
-            <button id="filter-all" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium">All</button>
-            <button id="filter-pending" class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-md text-sm font-medium">Pending</button>
-            <button id="filter-in-progress" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium">In Progress</button>
-            <button id="filter-resolved" class="px-3 py-1 bg-green-100 text-green-800 rounded-md text-sm font-medium">Resolved</button>
-          </div>
-        </div>
-
+        <h2 class="text-2xl font-semibold text-gray-800 mb-5">Your Submitted Complaints</h2>
         <div id="complaints-list" class="space-y-4">
-          <!-- Complaints will be loaded here dynamically -->
-          <div class="text-center py-8" id="loading-indicator">
-            <i class="fas fa-spinner fa-spin text-2xl text-blue-500"></i>
-            <p class="mt-2 text-gray-600">Loading your complaints...</p>
-          </div>
+          <!-- Complaints will be loaded here -->
+          <p class="text-center text-gray-500">Loading complaints...</p>
         </div>
-
-        <div id="no-complaints" class="hidden text-center py-8">
-          <i class="fas fa-inbox text-3xl text-gray-400"></i>
-          <h3 class="mt-2 text-lg font-medium text-gray-900">No complaints found</h3>
-          <p class="mt-1 text-gray-500">You haven't submitted any complaints yet.</p>
-          <a href="/citizen/new-complaint.html" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            <i class="fas fa-plus-circle mr-2"></i> Submit New Complaint
-          </a>
+        <div id="pagination-controls" class="flex justify-center items-center mt-6 space-x-2">
+            <button id="prev-page" class="btn-primary px-4 py-2 rounded-md disabled:opacity-50" disabled>Previous</button>
+            <span id="page-info" class="text-gray-700">Page 1 of 1</span>
+            <button id="next-page" class="btn-primary px-4 py-2 rounded-md disabled:opacity-50" disabled>Next</button>
         </div>
+        <div id="message-box" class="mt-4 p-3 rounded text-center hidden"></div>
       </div>
     </main>
   </div>
@@ -163,100 +137,98 @@
         }
       });
 
-      // Load complaints
-      async function loadComplaints(filter = 'all') {
-  try {
-    // Safely get elements with null checks
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const noComplaints = document.getElementById('no-complaints');
-    const complaintsList = document.getElementById('complaints-list');
-    
-    if (!loadingIndicator || !noComplaints || !complaintsList) {
-      console.error('Required DOM elements not found');
-      return;
-    }
+      const complaintsList = document.getElementById('complaints-list');
+      const messageBox = document.getElementById('message-box');
+      const prevPageBtn = document.getElementById('prev-page');
+      const nextPageBtn = document.getElementById('next-page');
+      const pageInfoSpan = document.getElementById('page-info');
 
-    loadingIndicator.classList.remove('hidden');
-    noComplaints.classList.add('hidden');
-    complaintsList.innerHTML = '';
-    
-    const response = await api.getComplaints(); // Use the correct API method
-    
-    if (response.success && response.data && response.data.complaints && response.data.complaints.length > 0) {
-      const filteredComplaints = filter === 'all' 
-        ? response.data.complaints 
-        : response.data.complaints.filter(c => c.status.toLowerCase() === filter.toLowerCase());
+      let currentPage = 1;
+      const complaintsPerPage = 5; // You can adjust this
 
-      if (filteredComplaints.length === 0) {
-        noComplaints.classList.remove('hidden');
-        return;
+      function displayMessage(message, type) {
+        messageBox.textContent = message;
+        messageBox.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+        if (type === 'success') {
+          messageBox.classList.add('bg-green-100', 'text-green-700');
+        } else if (type === 'error') {
+          messageBox.classList.add('bg-red-100', 'text-red-700');
+        }
       }
 
-            filteredComplaints.forEach(complaint => {
-              const complaintDate = new Date(complaint.createdAt).toLocaleDateString();
-              const statusClass = getStatusClass(complaint.status);
-              
+      function getStatusBadgeClass(status) {
+          switch (status.toLowerCase()) {
+              case 'pending': return 'status-pending';
+              case 'in progress': return 'status-in-progress';
+              case 'resolved': return 'status-resolved';
+              case 'rejected': return 'status-rejected';
+              case 'closed': return 'status-closed';
+              default: return 'bg-gray-400'; // Default gray for unknown status
+          }
+      }
+
+      async function loadComplaints(page = 1) {
+        complaintsList.innerHTML = '<p class="text-center text-gray-500">Loading complaints...</p>';
+        prevPageBtn.disabled = true;
+        nextPageBtn.disabled = true;
+        pageInfoSpan.textContent = `Page ${page} of ...`;
+
+        try {
+          // Call the newly defined getMyComplaints for user-specific complaints
+          const response = await api.getMyComplaints({ page: page, limit: complaintsPerPage });
+
+          if (response.success && response.data) {
+            const { complaints, currentPage: fetchedPage, totalPages, totalCount } = response.data;
+            
+            currentPage = fetchedPage;
+            pageInfoSpan.textContent = `Page ${currentPage} of ${totalPages}`;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages;
+
+            if (complaints.length === 0) {
+              complaintsList.innerHTML = '<p class="text-center text-gray-500">No complaints found.</p>';
+              return;
+            }
+
+            complaintsList.innerHTML = ''; // Clear loading message
+            complaints.forEach(complaint => {
               const complaintCard = document.createElement('div');
-              complaintCard.className = 'card hover:shadow-md transition-shadow';
+              complaintCard.className = 'card p-4 border border-gray-200 rounded-lg shadow-sm';
               complaintCard.innerHTML = `
-                <div class="flex justify-between items-start">
-                  <div>
-                    <h3 class="font-bold text-lg">${complaint.title}</h3>
-                    <p class="text-gray-600 mt-1">${complaint.description}</p>
-                    <div class="mt-2 flex items-center space-x-4">
-                      <span class="text-sm text-gray-500"><i class="fas fa-calendar-alt mr-1"></i> ${complaintDate}</span>
-                      <span class="text-sm text-gray-500"><i class="fas fa-map-marker-alt mr-1"></i> ${complaint.location?.address || 'No location'}</span>
-                    </div>
-                  </div>
-                  <span class="status-badge ${statusClass}">${complaint.status}</span>
+                <div class="flex justify-between items-center mb-2">
+                  <h3 class="text-lg font-semibold text-gray-800">${complaint.title}</h3>
+                  <span class="status-badge ${getStatusBadgeClass(complaint.status)}">${complaint.status}</span>
                 </div>
-                ${complaint.evidenceImages?.length > 0 ? `
-                <div class="mt-3">
-                  <h4 class="text-sm font-medium text-gray-700 mb-1">Attachments</h4>
-                  <div class="flex flex-wrap gap-2">
-                    ${complaint.evidenceImages.map(img => `
-                      <a href="/${img}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
-                        <i class="fas fa-paperclip mr-1"></i> View Evidence
-                      </a>
-                    `).join('')}
-                  </div>
-                </div>
-                ` : ''}
+                <p class="text-gray-600 text-sm mb-2">${complaint.description}</p>
+                <p class="text-gray-500 text-xs">Category: ${complaint.category}</p>
+                <p class="text-gray-500 text-xs">Location: ${complaint.location?.address || 'N/A'}</p>
+                <p class="text-gray-500 text-xs">Submitted: ${new Date(complaint.createdAt).toLocaleDateString()}</p>
               `;
               complaintsList.appendChild(complaintCard);
             });
           } else {
-      noComplaints.classList.remove('hidden');
-    }
-  } catch (error) {
-    console.error('Error loading complaints:', error);
-    alert('Failed to load complaints. Please try again.');
-  } finally {
-    const loadingIndicator = document.getElementById('loading-indicator');
-    if (loadingIndicator) {
-      loadingIndicator.classList.add('hidden');
-    }
-  }
-}
-
-      function getStatusClass(status) {
-        switch(status.toLowerCase()) {
-          case 'pending': return 'status-pending';
-          case 'in progress': return 'status-in-progress';
-          case 'resolved': return 'status-resolved';
-          case 'rejected': return 'status-rejected';
-          default: return 'status-pending';
+            displayMessage(response.message || 'Failed to load complaints.', 'error');
+            complaintsList.innerHTML = '<p class="text-center text-red-500">Error loading complaints.</p>';
+          }
+        } catch (error) {
+          console.error('Error loading complaints:', error);
+          displayMessage(error.message || 'An unexpected error occurred while loading complaints.', 'error');
+          complaintsList.innerHTML = '<p class="text-center text-red-500">Error loading complaints: ' + (error.message || 'Network error') + '</p>';
         }
       }
 
-      // Filter buttons
-      document.getElementById('filter-all').addEventListener('click', () => loadComplaints('all'));
-      document.getElementById('filter-pending').addEventListener('click', () => loadComplaints('pending'));
-      document.getElementById('filter-in-progress').addEventListener('click', () => loadComplaints('in progress'));
-      document.getElementById('filter-resolved').addEventListener('click', () => loadComplaints('resolved'));
+      prevPageBtn.addEventListener('click', () => {
+          if (currentPage > 1) {
+              loadComplaints(currentPage - 1);
+          }
+      });
+
+      nextPageBtn.addEventListener('click', () => {
+          loadComplaints(currentPage + 1);
+      });
 
       // Initial load
-      loadComplaints();
+      loadComplaints(currentPage);
 
       // Global logout function for the button
       function logout(redirectPath) {
@@ -273,6 +245,8 @@
         }
         window.location.href = redirectPath;
       }
+      // Make logout function globally accessible if it's in a separate script
+      window.logout = logout;
     });
   </script>
 </body>

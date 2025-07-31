@@ -10,18 +10,26 @@ const expressRateLimit = require('express-rate-limit');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const multer = require('multer');
-const { ErrorResponse } = require('./utils/ErrorResponse');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
+// IMPORTANT: Import necessary modules for the new route and error handling
 const { authenticate, authorize, optionalAuthenticate } = require('./middleware/authMiddleware');
+// Removed: const uploadMiddleware = require('./middleware/uploadMiddleware'); // Removed as requested
+// Removed: const complaintController = require('./controllers/complaintController'); // Removed as requested
+const ErrorResponse = require('./utils/ErrorResponse'); // Still needed for error handling
+const Complaint = require('./models/Complaint'); // Still needed for creating Complaint documents
+
 
 const app = express();
 
 // Log environment variables at startup
 console.log('--- NODE.JS ENVIRONMENT VARIABLES ---');
 console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('JWT_SECRET (from .env):', process.env.JWT_SECRET);
+console.log('JWT_SECRET (from .env):', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
 console.log('JWT_EXPIRES_IN (from .env):', process.env.JWT_EXPIRES_IN);
 console.log('PORT:', process.env.PORT);
+console.log('MONGODB_URI (from .env):', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
+console.log('PYTHON_ML_SERVICE_URL (from .env):', process.env.PYTHON_ML_SERVICE_URL || 'Not Set (using default)');
 console.log('-----------------------------------');
 
 connectDB();
@@ -30,7 +38,7 @@ securityMiddleware(app);
 
 // CORS configuration for the frontend server
 app.use(cors({
-  origin: 'http://localhost:5000', // Ensure this matches your frontend's origin
+  origin: process.env.FRONTEND_URL || 'http://localhost:8000',
   credentials: true,
 }));
 
@@ -38,97 +46,119 @@ app.use(cors({
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; " +
-    "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; " +
-    "img-src 'self' data: http://localhost:5001 https://*.tile.openstreetmap.org; " +
-    "connect-src 'self' http://localhost:5001 https://*.tile.openstreetmap.org; " +
-    "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; " +
-    "object-src 'none'; " +
-    "base-uri 'self';"
+    `default-src 'self'; ` +
+    `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; ` +
+    `style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; ` +
+    `img-src 'self' data: ${process.env.PYTHON_ML_SERVICE_URL || 'http://localhost:8001'} https://*.tile.openstreetmap.org; ` +
+    `connect-src 'self' ${process.env.PYTHON_ML_SERVICE_URL || 'http://localhost:8001'} https://*.tile.openstreetmap.org; ` +
+    `font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; ` +
+    `object-src 'none'; ` +
+    `base-uri 'self';`
   );
   next();
 });
 
 app.use(morgan('dev'));
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true }));
+
+app.use(express.json({ limit: '10kb' })); // Essential for parsing JSON body from frontend
+app.use(express.urlencoded({ extended: true })); // For parsing URL-encoded bodies
 app.use(cookieParser());
 
-// Static files
+// --- IMPORTANT: SERVE STATIC FILES BEFORE API ROUTES ---
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // This line is for serving existing uploads, not for processing new ones
+// --- END STATIC FILE SERVING ---
 
-// Configure multer for file uploads
-const upload = multer({
-  dest: 'uploads/',
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
-
-// Direct complaint handling without controller
+// --- NEW ROUTE TO HANDLE POST /complaints DIRECTLY (from frontend's api.js) ---
+// Logic for creating complaint is now directly in this route handler.
 app.post(
-  '/api/complaints',
-  upload.fields([
-    { name: 'evidenceImages', maxCount: 5 },
-    { name: 'locationImage', maxCount: 1 }
-  ]),
-  optionalAuthenticate,
+  '/complaints',
+  optionalAuthenticate, // Allows both logged-in and anonymous submissions
   async (req, res, next) => {
     try {
-      // Extract data from request
-      const { title, description, category, department, locationText, isAnonymous } = req.body;
-      const files = req.files || {};
-      const evidenceImages = files.evidenceImages || [];
-      const locationImage = files.locationImage ? files.locationImage[0] : null;
-      const user = req.user || null;
+      // Data is expected to be JSON from frontend now, parsed by express.json()
+      const { title, description, category, locationText, department } = req.body;
 
       // Validate required fields
-      if (!title || !description || !category) {
-        return next(new ErrorResponse('Title, description, and category are required', 400));
+      if (!title || !description || !category || !locationText) {
+        return next(new ErrorResponse('All required fields (title, description, category, location) must be filled', 400));
       }
 
-      // Create complaint object
-      const complaintData = {
-        title,
-        description,
-        category,
-        department: department || null,
-        location: locationText || null,
-        isAnonymous: isAnonymous === 'true',
-        status: 'pending',
-        createdBy: user ? user._id : null,
-        evidence: evidenceImages.map(file => ({
-          filename: file.originalname,
-          path: file.path,
-          mimetype: file.mimetype,
-          size: file.size
-        })),
-        locationImage: locationImage ? {
-          filename: locationImage.originalname,
-          path: locationImage.path,
-          mimetype: locationImage.mimetype,
-          size: locationImage.size
-        } : null
+      // No file handling as uploadMiddleware is removed
+      const evidenceImages = [];
+      const evidenceVideos = [];
+      const evidenceDocuments = [];
+
+      // Create location object
+      const location = {
+          type: 'Point',
+          coordinates: [0, 0], // Default coordinates
+          address: locationText
       };
 
-      // Save to database
-      const Complaint = mongoose.model('Complaint');
-      const complaint = await Complaint.create(complaintData);
+      // Try to parse coordinates if provided
+      if (locationText.includes(',')) {
+          const coords = locationText.split(',').map(Number);
+          if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+              location.coordinates = [coords[1], coords[0]]; // [lng, lat]
+          }
+      }
 
-      res.status(201).json({
-        success: true,
-        message: 'Complaint submitted successfully',
-        data: complaint
+      // Determine user for the complaint
+      const userId = req.user ? req.user.id : undefined;
+      const isAnonymous = !userId; // If no user ID, it's anonymous
+
+      const newComplaint = await Complaint.create({
+          user: userId,
+          title,
+          description,
+          category,
+          location,
+          evidenceImages, // Will be empty
+          evidenceVideos, // Will be empty
+          evidenceDocuments, // Will be empty
+          isAnonymous: isAnonymous,
+          // department: department // Uncomment if you want to save department, ensure it's a valid ObjectId if referenced
       });
 
-    } catch (error) {
-      console.error('Error submitting complaint:', error);
-      next(new ErrorResponse('Failed to submit complaint', 500));
+      res.status(201).json({
+          success: true,
+          message: 'Complaint submitted successfully!',
+          data: newComplaint
+      });
+
+    } catch (err) {
+      console.error('Error in /complaints route handler:', err);
+      if (err.name === 'ValidationError') {
+        const messages = Object.values(err.errors).map(val => val.message);
+        return next(new ErrorResponse(`Complaint validation failed: ${messages.join(', ')}`, 400));
+      }
+      next(new ErrorResponse('Failed to submit complaint due to an internal server error.', 500));
     }
   }
 );
+// --- END NEW COMPLAINT ROUTE ---
 
-// Staff password reset endpoint
+// --- PROXY FOR PYTHON ML SERVICE ---
+const pythonMlProxy = createProxyMiddleware({
+    target: process.env.PYTHON_ML_SERVICE_URL || 'http://localhost:8001',
+    changeOrigin: true,
+    pathRewrite: {
+        '^/api/ml': '/api/ml',
+    },
+    onProxyReq: (proxyReq, req, res) => {
+        // console.log(`Proxying request to Python: ${proxyReq.path}`);
+    },
+    onError: (err, req, res) => {
+        console.error('Proxy error to Python ML service:', err);
+        res.status(500).json({ success: false, message: 'Failed to connect to ML service.' });
+    }
+});
+app.use('/api/ml', pythonMlProxy);
+// --- END PROXY ---
+
+
+// --- NEW ROUTE: RESET STAFF PASSWORDS ---
 app.post('/api/admin/reset-staff-passwords', authenticate, authorize('admin'), async (req, res, next) => {
   try {
     const newPassword = 'StaffPassword123';
@@ -148,8 +178,9 @@ app.post('/api/admin/reset-staff-passwords', authenticate, authorize('admin'), a
     next(new ErrorResponse(`Error resetting staff passwords: ${err.message}`, 500));
   }
 });
+// --- END NEW ROUTE ---
 
-// Route mounting
+// --- ROUTE MOUNTING ---
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const complaintRoutes = require('./routes/complaintRoutes');
@@ -158,22 +189,23 @@ const staffRoutes = require('./routes/staffRoutes');
 
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/complaints', complaintRoutes);
+app.use('/api/complaints', complaintRoutes); // This mounts your existing complaint routes under /api/complaints
 app.use('/api', publicAuthRoutes);
 app.use('/api/staff', staffRoutes);
+// --- END ROUTE MOUNTING ---
 
-// Error handling middleware
+// --- ERROR HANDLING MIDDLEWARE ---
 app.use(notFound);
 app.use(errorHandler);
+// --- END ERROR HANDLING ---
 
-// Rate limiting
 exports.authLimiter = expressRateLimit({
   windowMs: 2 * 60 * 60 * 1000,
   max: 1000,
   message: 'Too many login attempts, please try again later'
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });

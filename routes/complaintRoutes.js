@@ -1,81 +1,45 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
 const Complaint = require('../models/Complaint');
 const { authenticate, authorize, optionalAuthenticate } = require('../middleware/authMiddleware');
 const ErrorResponse = require('../utils/ErrorResponse');
-const multer = require('multer');
-const path = require('path');
-
-// Configure Multer for file uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/'); 
-    },
-    filename: function (req, file, cb) {
-        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-    }
-});
-
-const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|pdf/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (extname && mimetype) {
-        return cb(null, true);
-    } else {
-        cb(new ErrorResponse('Only images, videos, and PDFs are allowed!', 400), false);
-    }
-};
-
-// Initialize multer middleware correctly
-const uploadMiddleware = multer({
-    storage: storage,
-    limits: { fileSize: 1024 * 1024 * 50 }, // 50MB
-    fileFilter: fileFilter
-});
+// Removed: const uploadMiddleware = require('../middleware/uploadMiddleware'); // Removed as requested
 
 // @desc    Submit an anonymous complaint
 // @route   POST /api/complaints/anonymous
 // @access  Public
 router.post(
   '/anonymous',
-  uploadMiddleware.fields([
-    { name: 'evidenceImages', maxCount: 5 },
-    { name: 'evidenceVideos', maxCount: 2 },
-    { name: 'evidenceDocuments', maxCount: 3 }
-  ]),
+  // Removed: uploadMiddleware.fields([...]), // Removed as uploadMiddleware is no longer available
   async (req, res, next) => {
     try {
-      // Process form data (similar to your regular complaint route)
-      const title = Array.isArray(req.body.title) ? req.body.title[0] : req.body.title;
-      const description = Array.isArray(req.body.description) ? req.body.description[0] : req.body.description;
-      const category = Array.isArray(req.body.category) ? req.body.category[0] : req.body.category;
-      const locationText = Array.isArray(req.body.locationText) ? req.body.locationText[0] : req.body.locationText;
+      // Data is expected to be JSON from frontend now, parsed by express.json()
+      // Note: If frontend sends FormData, express.json/urlencoded might not parse it.
+      // You might need to adjust frontend to send JSON if no file uploads are expected.
+      const title = req.body.title;
+      const description = req.body.description;
+      const category = req.body.category;
+      const locationText = req.body.locationText;
 
-      // Validate required fields
       if (!title || !description || !category || !locationText) {
         return next(new ErrorResponse('All required fields must be filled', 400));
       }
 
-      // Process files
-      const evidenceImages = req.files?.evidenceImages?.map(file => file.path) || [];
-      const evidenceVideos = req.files?.evidenceVideos?.map(file => file.path) || [];
-      const evidenceDocuments = req.files?.evidenceDocuments?.map(file => file.path) || [];
+      // File processing removed as uploadMiddleware is removed
+      const evidenceImages = [];
+      const evidenceVideos = [];
+      const evidenceDocuments = [];
 
-      // Create location object
       const location = {
         type: 'Point',
-        coordinates: [0, 0], // Default coordinates
+        coordinates: [0, 0],
         address: locationText
       };
 
-      // Try to parse coordinates if provided
       if (locationText.includes(',')) {
         const coords = locationText.split(',').map(Number);
         if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-          location.coordinates = [coords[1], coords[0]]; // [lng, lat]
+          location.coordinates = [coords[1], coords[0]];
         }
       }
 
@@ -130,54 +94,79 @@ router.get('/assigned', authenticate, authorize('staff'), async (req, res, next)
     }
 });
 
+// @desc    Get all complaints (for admin dashboard)
+// @route   GET /api/complaints
+// @access  Private (Admin)
+router.get('/', authenticate, authorize('admin'), async (req, res, next) => {
+    try {
+        const { status, category, page = 1, limit = 10 } = req.query;
+        
+        const query = {};
+        if (status) query.status = status;
+        if (category) query.category = category;
 
+        const complaints = await Complaint.find(query)
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .populate('user', 'name email')
+            .populate('assignedTo', 'name email');
 
-// @desc    Submit a new complaint
+        const total = await Complaint.countDocuments(query);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                complaints,
+                total,
+                page: Number(page),
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (err) {
+        next(new ErrorResponse('Error fetching complaints', 500));
+    }
+});
+
+// @desc    Submit a new complaint (for logged-in users, or can be anonymous via /complaints route in server.js)
 // @route   POST /api/complaints
-// @access  Public (can be submitted anonymously or by logged-in user)
+// @access  Public (can be submitted by logged-in user)
 router.post(
-    '/',
-    optionalAuthenticate,
-    uploadMiddleware.fields([
-        { name: 'evidenceImages', maxCount: 5 },
-        { name: 'evidenceVideos', maxCount: 2 },
-        { name: 'evidenceDocuments', maxCount: 3 }
-    ]),
+    '/', // This route becomes /api/complaints when mounted in server.js
+    optionalAuthenticate, // Allows both logged-in and anonymous submissions
+    // Removed: uploadMiddleware.fields([...]), // Removed as uploadMiddleware is no longer available
     async (req, res, next) => {
         try {
-            // Ensure we're working with string values
-            const title = Array.isArray(req.body.title) ? req.body.title[0] : req.body.title;
-            const description = Array.isArray(req.body.description) ? req.body.description[0] : req.body.description;
-            const category = Array.isArray(req.body.category) ? req.body.category[0] : req.body.category;
-            const locationText = Array.isArray(req.body.locationText) ? req.body.locationText[0] : req.body.locationText;
+            // Data is expected to be JSON from frontend now, parsed by express.json()
+            const title = req.body.title;
+            const description = req.body.description;
+            const category = req.body.category;
+            const locationText = req.body.locationText;
 
-            // Validate required fields
             if (!title || !description || !category || !locationText) {
                 return next(new ErrorResponse('All required fields must be filled', 400));
             }
 
-            // Process files
-            const evidenceImages = req.files?.evidenceImages?.map(file => file.path) || [];
-            const evidenceVideos = req.files?.evidenceVideos?.map(file => file.path) || [];
-            const evidenceDocuments = req.files?.evidenceDocuments?.map(file => file.path) || [];
+            // File processing removed as uploadMiddleware is removed
+            const evidenceImages = [];
+            const evidenceVideos = [];
+            const evidenceDocuments = [];
 
-            // Create location object
             const location = {
                 type: 'Point',
-                coordinates: [0, 0], // Default coordinates
+                coordinates: [0, 0],
                 address: locationText
             };
 
-            // Try to parse coordinates if provided
             if (locationText.includes(',')) {
                 const coords = locationText.split(',').map(Number);
                 if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                    location.coordinates = [coords[1], coords[0]]; // [lng, lat]
+                    location.coordinates = [coords[1], coords[0]];
                 }
             }
 
             const newComplaint = await Complaint.create({
-                user: req.user?.id,
+                user: req.user?.id, // Will be undefined for anonymous, set for authenticated
                 title,
                 description,
                 category,
@@ -232,6 +221,97 @@ router.get('/my-complaints', authenticate, authorize('citizen'), async (req, res
     } catch (err) {
         console.error('Error fetching user complaints:', err);
         next(new ErrorResponse('Could not fetch user complaints', 500));
+    }
+});
+
+// @desc    Get a single complaint by ID
+// @route   GET /api/complaints/:id
+// @access  Private (Admin/Staff/Citizen if authorized)
+router.get('/:id', authenticate, async (req, res, next) => {
+    try {
+        const complaint = await Complaint.findById(req.params.id)
+            .populate('user', 'name email')
+            .populate('assignedTo', 'name email');
+
+        if (!complaint) {
+            return next(new ErrorResponse(`Complaint not found with id of ${req.params.id}`, 404));
+        }
+
+        // Authorization check: Admin/Staff can see any, Citizen can only see their own
+        if (req.user.role === 'citizen' && complaint.user.toString() !== req.user.id) {
+            return next(new ErrorResponse('Not authorized to view this complaint', 403));
+        }
+
+        res.status(200).json({
+            success: true,
+            data: complaint
+        });
+    } catch (err) {
+        console.error('Error fetching single complaint:', err);
+        next(new ErrorResponse('Error fetching complaint', 500));
+    }
+});
+
+// @desc    Update complaint status
+// @route   PUT /api/complaints/:id/status
+// @access  Private (Admin, Staff)
+router.put('/:id/status', authenticate, authorize('admin', 'staff'), async (req, res, next) => {
+    try {
+        const { status } = req.body;
+
+        if (!status) {
+            return next(new ErrorResponse('Please provide a status', 400));
+        }
+
+        const complaint = await Complaint.findById(req.params.id);
+
+        if (!complaint) {
+            return next(new ErrorResponse(`Complaint not found with id of ${req.params.id}`, 404));
+        }
+
+        // Staff can only update complaints assigned to them
+        if (req.user.role === 'staff' && complaint.assignedTo && complaint.assignedTo.toString() !== req.user.id) {
+            return next(new ErrorResponse('Not authorized to update this complaint', 403));
+        }
+
+        complaint.status = status;
+        await complaint.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Complaint status updated successfully',
+            data: complaint
+        });
+
+    } catch (err) {
+        console.error('Error updating complaint status:', err);
+        next(new ErrorResponse('Error updating complaint status', 500));
+    }
+});
+
+// @desc    Delete a complaint
+// @route   DELETE /api/complaints/:id
+// @access  Private (Admin)
+router.delete('/:id', authenticate, authorize('admin'), async (req, res, next) => {
+    try {
+        const complaint = await Complaint.findByIdAndDelete(req.params.id);
+
+        if (!complaint) {
+            return next(new ErrorResponse(`Complaint not found with id of ${req.params.id}`, 404));
+        }
+
+        // Optionally, delete associated files from 'uploads' directory
+        // This requires fs.unlink and path.resolve, be careful with production setup
+        // For simplicity, this example doesn't include file deletion logic here.
+
+        res.status(200).json({
+            success: true,
+            message: 'Complaint deleted successfully',
+            data: {}
+        });
+    } catch (err) {
+        console.error('Error deleting complaint:', err);
+        next(new Error(ErrorResponse('Error deleting complaint', 500))); // Changed to use ErrorResponse
     }
 });
 

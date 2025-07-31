@@ -73,6 +73,7 @@
     "hpp": "^0.2.3",
     "http-errors": "^2.0.0",
     "http-parser-js": "^0.5.10",
+    "http-proxy-middleware": "^3.0.5",
     "iconv-lite": "^0.6.3",
     "idb": "^7.1.1",
     "inherits": "^2.0.4",

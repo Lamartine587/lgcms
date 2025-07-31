@@ -149,7 +149,6 @@
               <option value="Environment">Environment</option>
               <option value="Drainage Issues">Drainage Issues</option>
               <option value="Public Transport">Public Transport</option>
-              <option value="Community Development">Community Development</option>
               <option value="Other">Other</option>
             </select>
           </div>
@@ -179,10 +178,7 @@
             </button>
             <div id="location-status" class="text-sm text-gray-500 mt-1"></div>
           </div>
-          <div>
-            <label for="attachments" class="block text-gray-700 text-sm font-bold mb-2">Attachments (Optional):</label>
-            <input type="file" id="attachments" name="evidenceImages" multiple class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-          </div>
+          <!-- REMOVED: Attachments input field -->
           <button type="submit" class="btn-primary w-full py-3">
             <i class="fas fa-paper-plane mr-2"></i> Submit Complaint
           </button>
@@ -270,34 +266,23 @@
        messageBox.classList.add('hidden');
 
        try {
-           const formData = new FormData();
-           
-           // Get single string values from form elements
-           const title = document.getElementById('title').value;
-           const description = document.getElementById('description').value;
-           const category = document.getElementById('category').value;
-           const locationText = document.getElementById('location').value;
+           // Create a plain JavaScript object for the data
+           const complaintData = {
+               title: document.getElementById('title').value,
+               description: document.getElementById('description').value,
+               category: document.getElementById('category').value,
+               locationText: document.getElementById('location').value,
+               // Department is optional, only include if selected
+               department: document.getElementById('department').value || undefined
+           };
            
            // Validate required fields
-           if (!title || !description || !category || !locationText) {
-               throw new Error('All required fields must be filled');
+           if (!complaintData.title || !complaintData.description || !complaintData.category || !complaintData.locationText) {
+               throw new Error('All required fields (Title, Description, Category, Location) must be filled');
            }
 
-           // Append string values (not arrays)
-           formData.append('title', title);
-           formData.append('description', description);
-           formData.append('category', category);
-           formData.append('locationText', locationText);
-
-           // Handle file uploads
-           const fileInput = document.getElementById('attachments');
-           if (fileInput.files) {
-               for (let i = 0; i < fileInput.files.length; i++) {
-                   formData.append('evidenceImages', fileInput.files[i]);
-               }
-           }
-
-           const response = await api.createComplaint(formData);
+           // Send data as JSON (isFormData: false)
+           const response = await api.createComplaint(complaintData, false); // isFormData is false now
            
            if (response.success) {
                displayMessage('Complaint submitted successfully!', 'success');
@@ -323,15 +308,12 @@
        }
 
        // Global logout function for the button
-       // Global logout function for the button
 function logout(redirectPath) {
-    // Use the same check for api.getToken
     const token = (api.getToken && typeof api.getToken === 'function')
         ? api.getToken()
         : localStorage.getItem('token');
     
     if (token) {
-        // Use api.removeToken if it exists, otherwise use localStorage directly
         if (api.removeToken && typeof api.removeToken === 'function') {
             api.removeToken();
         } else {
