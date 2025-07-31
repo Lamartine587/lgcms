@@ -34,15 +34,36 @@ const ComplaintSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a description']
     },
-    category: {
+     category: {
         type: String,
         required: [true, 'Please add a category'],
-        // FIX: Added 'Electricity Outage' to the enum for category
-        enum: ['Roads', 'Water', 'Sanitation', 'Health', 'Education', 'Security', 'Other', 'Public Safety', 'Electricity Outage', 'Waste Management', 'Traffic Management', 'Housing', 'Environment', 'Drainage Issues', 'Public Transport', 'Community Development']
+        enum: [
+            'Roads', 'Water', 'Sanitation', 'Health', 'Education', 
+            'Security', 'Public Safety', 'Electricity Outage', 
+            'Waste Management', 'Traffic Management', 'Housing', 
+            'Environment', 'Drainage Issues', 'Public Transport', 
+            'Community Development', 'Other', 'Dangerous Intersection'
+        ]
+    },
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number],
+            index: '2dsphere'
+        },
+        address: String
+    },
+    description: {
+        type: String,
+        required: [true, 'Please add a description']
     },
     status: {
         type: String,
-        enum: ['Pending','pending', 'In Progress', 'Resolved', 'Rejected'],
+        enum: ['Pending', 'In Progress', 'Resolved', 'Rejected'],
         default: 'Pending'
     },
     priority: {
@@ -60,18 +81,6 @@ const ComplaintSchema = new mongoose.Schema({
         ref: 'User',
         default: null
     },
-    location: {
-        type: {
-            type: String,
-            enum: ['Point'],
-            default: 'Point'
-        },
-        coordinates: {
-            type: [Number],
-            index: '2dsphere'
-        },
-        address: String
-    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -82,8 +91,8 @@ const ComplaintSchema = new mongoose.Schema({
     },
     resolvedAt: Date,
     evidenceImages: [String],
-evidenceVideos: [String],
-evidenceDocuments: [String], // Changed from evidencePdfs
+    evidenceVideos: [String],
+    evidenceDocuments: [String],
     responseHistory: [
         {
             responder: String,

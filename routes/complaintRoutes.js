@@ -130,39 +130,7 @@ router.get('/assigned', authenticate, authorize('staff'), async (req, res, next)
     }
 });
 
-// @desc    Get all complaints (for admin dashboard)
-// @route   GET /api/complaints
-// @access  Private (Admin)
-router.get('/', authenticate, authorize('admin'), async (req, res, next) => {
-    try {
-        const { status, category, page = 1, limit = 10 } = req.query;
-        
-        const query = {};
-        if (status) query.status = status;
-        if (category) query.category = category;
 
-        const complaints = await Complaint.find(query)
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .populate('user', 'name email')
-            .populate('assignedTo', 'name email');
-
-        const total = await Complaint.countDocuments(query);
-
-        res.status(200).json({
-            success: true,
-            data: {
-                complaints,
-                total,
-                page: Number(page),
-                pages: Math.ceil(total / limit)
-            }
-        });
-    } catch (err) {
-        next(new ErrorResponse('Error fetching complaints', 500));
-    }
-});
 
 // @desc    Submit a new complaint
 // @route   POST /api/complaints

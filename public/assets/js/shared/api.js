@@ -272,17 +272,14 @@ const api = {
     return apiRequest(`/api/complaints?${queryString}`, 'GET');
   },
   
-  getComplaints: function(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    return apiRequest(`/api/complaints/my-complaints?${queryString}`, 'GET');
-},
-  
-     createComplaint: function(complaintData, isAnonymous = false) {
-        // FIX: Add '/api' prefix to the endpoint here
-        const endpoint = isAnonymous ? '/api/complaints/anonymous' : '/api/complaints';
-        const usesFormData = complaintData instanceof FormData;
-        return apiRequest(endpoint, 'POST', complaintData, usesFormData);
-    },
+  getComplaint: function(id) {
+    return apiRequest(`/api/complaints/${id}`, 'GET');
+  },
+    createComplaint: function(complaintData, isAnonymous = false) {
+    const endpoint = isAnonymous ? '/api/complaints/anonymous' : '/api/complaints';
+    const usesFormData = complaintData instanceof FormData;
+    return apiRequest(endpoint, 'POST', complaintData, usesFormData);
+  },
   
   updateComplaintStatus: function(id, status) {
     return apiRequest(`/api/complaints/${id}/status`, 'PUT', { status });

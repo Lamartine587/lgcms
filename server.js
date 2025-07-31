@@ -10,11 +10,9 @@ const expressRateLimit = require('express-rate-limit');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-
-// IMPORTANT: Removed uploadMiddleware and complaintController imports as requested.
-// This will cause the app.post('/complaints') route (if uncommented) to fail.
+const multer = require('multer');
+const { ErrorResponse } = require('./utils/ErrorResponse');
 const { authenticate, authorize, optionalAuthenticate } = require('./middleware/authMiddleware');
-
 
 const app = express();
 
@@ -53,32 +51,84 @@ app.use((req, res, next) => {
 });
 
 app.use(morgan('dev'));
-
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// --- IMPORTANT: SERVE STATIC FILES BEFORE API ROUTES ---
+// Static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// --- END STATIC FILE SERVING ---
 
-// --- NEW ROUTE TO HANDLE POST /complaints DIRECTLY (REMOVED DEPENDENCIES) ---
-// This route will now likely fail or not handle file uploads/complaint logic correctly
-// because uploadMiddleware and complaintController are no longer imported.
-// If you uncomment this, you will need to re-add the necessary imports and logic.
-/*
+// Configure multer for file uploads
+const upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+// Direct complaint handling without controller
 app.post(
-  '/complaints',
-  // uploadMiddleware.fields([...]), // This would be undefined
+  '/api/complaints',
+  upload.fields([
+    { name: 'evidenceImages', maxCount: 5 },
+    { name: 'locationImage', maxCount: 1 }
+  ]),
   optionalAuthenticate,
-  // complaintController.createComplaint // This would be undefined
+  async (req, res, next) => {
+    try {
+      // Extract data from request
+      const { title, description, category, department, locationText, isAnonymous } = req.body;
+      const files = req.files || {};
+      const evidenceImages = files.evidenceImages || [];
+      const locationImage = files.locationImage ? files.locationImage[0] : null;
+      const user = req.user || null;
+
+      // Validate required fields
+      if (!title || !description || !category) {
+        return next(new ErrorResponse('Title, description, and category are required', 400));
+      }
+
+      // Create complaint object
+      const complaintData = {
+        title,
+        description,
+        category,
+        department: department || null,
+        location: locationText || null,
+        isAnonymous: isAnonymous === 'true',
+        status: 'pending',
+        createdBy: user ? user._id : null,
+        evidence: evidenceImages.map(file => ({
+          filename: file.originalname,
+          path: file.path,
+          mimetype: file.mimetype,
+          size: file.size
+        })),
+        locationImage: locationImage ? {
+          filename: locationImage.originalname,
+          path: locationImage.path,
+          mimetype: locationImage.mimetype,
+          size: locationImage.size
+        } : null
+      };
+
+      // Save to database
+      const Complaint = mongoose.model('Complaint');
+      const complaint = await Complaint.create(complaintData);
+
+      res.status(201).json({
+        success: true,
+        message: 'Complaint submitted successfully',
+        data: complaint
+      });
+
+    } catch (error) {
+      console.error('Error submitting complaint:', error);
+      next(new ErrorResponse('Failed to submit complaint', 500));
+    }
+  }
 );
-*/
-// --- END NEW COMPLAINT ROUTE ---
 
-
-// --- NEW ROUTE: RESET STAFF PASSWORDS ---
+// Staff password reset endpoint
 app.post('/api/admin/reset-staff-passwords', authenticate, authorize('admin'), async (req, res, next) => {
   try {
     const newPassword = 'StaffPassword123';
@@ -98,9 +148,8 @@ app.post('/api/admin/reset-staff-passwords', authenticate, authorize('admin'), a
     next(new ErrorResponse(`Error resetting staff passwords: ${err.message}`, 500));
   }
 });
-// --- END NEW ROUTE ---
 
-// --- ROUTE MOUNTING ---
+// Route mounting
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const complaintRoutes = require('./routes/complaintRoutes');
@@ -109,16 +158,15 @@ const staffRoutes = require('./routes/staffRoutes');
 
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/complaints', complaintRoutes); // This mounts your existing complaint routes under /api/complaints
+app.use('/api/complaints', complaintRoutes);
 app.use('/api', publicAuthRoutes);
 app.use('/api/staff', staffRoutes);
-// --- END ROUTE MOUNTING ---
 
-// --- ERROR HANDLING MIDDLEWARE ---
+// Error handling middleware
 app.use(notFound);
 app.use(errorHandler);
-// --- END ERROR HANDLING ---
 
+// Rate limiting
 exports.authLimiter = expressRateLimit({
   windowMs: 2 * 60 * 60 * 1000,
   max: 1000,
