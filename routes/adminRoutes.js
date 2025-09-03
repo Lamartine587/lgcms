@@ -256,6 +256,72 @@ router.post('/logout', authenticate, authorize('admin', 'staff'), async (req, re
 });
 
 /**
+ * EXPORT COMPLAINTS TO EXCEL
+ */
+// @desc    Export complaints to Excel
+// @route   GET /api/admin/complaints/export
+// @access  Private (Admin, Staff)
+router.get('/complaints/export', authenticate, authorize('admin', 'staff'), async (req, res, next) => {
+    try {
+        const complaints = await Complaint.find()
+            .populate('user', 'username email') // Populate user details
+            .populate('assignedTo', 'username email') // Populate assigned staff details
+            .lean(); // Return plain JS objects
+
+        if (complaints.length === 0) {
+            return next(new ErrorResponse('No complaints found to export', 404));
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Complaints');
+
+        // Define columns
+        worksheet.columns = [
+            { header: 'ID', key: '_id', width: 30 },
+            { header: 'Title', key: 'title', width: 30 },
+            { header: 'Category', key: 'category', width: 20 },
+            { header: 'Description', key: 'description', width: 50 },
+            { header: 'Status', key: 'status', width: 20 },
+            { header: 'Priority', key: 'priority', width: 20 },
+            { header: 'Assigned To Username', key: 'assignedTo.username', width: 30 },
+            { header: 'Created At', key: 'createdAt', width: 25, style: { numFmt:'yyyy-mm-dd hh:mm:ss' } },
+            { header: 'Updated At', key: 'updatedAt', width: 25, style: { numFmt:'yyyy-mm-dd hh:mm:ss' } }
+        ];
+
+        // Add rows
+        complaints.forEach(complaint => {
+            worksheet.addRow({
+                ...complaint,
+                userId: complaint.user ? complaint.user._id : null,
+                assignedToId: complaint.assignedTo ? complaint.assignedTo._id : null,
+                'assignedTo.username': complaint.assignedTo ? complaint.assignedTo.username : 'Unassigned',
+                'createdAt': complaint.createdAt ? new Date(complaint.createdAt) : null,
+                'updatedAt': complaint.updatedAt ? new Date(complaint.updatedAt) : null
+            }).eachCell((cell, colNumber) => {
+                // Format date columns
+                if (colNumber === 8 || colNumber === 9) {
+                    cell.value = new Date(cell.value); // Ensure it's a Date object
+                    cell.style.numFmt = 'yyyy-mm-dd hh:mm:ss'; // Format as date-time
+                }
+            });
+        });
+
+        // Set filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for filename safety
+        const filename = `Complaints_${timestamp}.xlsx`;
+
+        // Write to buffer and send as response
+        const buffer = await workbook.xlsx.writeBuffer();
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.send(buffer);
+    } catch (err) {
+        console.error('Error exporting complaints to Excel:', err);
+        next(new ErrorResponse('Failed to export complaints', 500));
+    }
+});
+
+/**
  * DASHBOARD ROUTES
  */
 
@@ -322,8 +388,7 @@ router.get('/stats', authenticate, authorize('admin', 'staff'), async (req, res,
             resolvedCases,
             avgResolutionTime: avgResolutionTimeDays.toFixed(1),
             // todayActivity could be calculated based on recentActivity count from today, if filtered.
-            // For now, it's a placeholder or based on the general recent activity count.
-            todayActivity: recentActivity.length, // Consider refining this if you need actual "today's" activity
+            todayActivity: recentActivity.length,
             recentActivity
         };
 

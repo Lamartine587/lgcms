@@ -10,7 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.min.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.min.js"></script> <!-- Corrected URL -->
   <style>
     canvas {
       max-height: 450px !important;
@@ -43,7 +43,7 @@
         <a href="/admin/complaints.html" class="flex items-center p-2 hover:bg-blue-900 rounded" aria-label="Manage Complaints">
           <i class="fas fa-exclamation-circle mr-2"></i> Complaints
         </a>
-        <button onclick="logout('admin', '/admin/login.html')" class="flex items-center p-2 w-full text-left hover:bg-blue-900 rounded" aria-label="Logout">
+        <button onclick="logout('admin', '/index.html')" class="flex items-center p-2 w-full text-left hover:bg-blue-900 rounded" aria-label="Logout">
           <i class="fas fa-sign-out-alt mr-2"></i> Logout
         </button>
       </nav>
@@ -73,31 +73,31 @@
           <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div class="card dashboard-card p-4">
               <h3 class="text-md font-semibold flex items-center">
-                <i class="fas fa-chart-line text-blue-600 mr-2"></i> Complaint Volume
+                <i class="fas fa-chart-line text-blue-600 mr-2"></i>
               </h3>
-              <p id="complaint-volume" class="text-2xl font-bold mt-2">0</p>
-              <p id="volume-change" class="text-sm text-gray-600 mt-1">Change: N/A</p>
+              <p id="complaint-volume" class="text-2xl font-bold mt-2"></p>
+              <p id="volume-change" class="text-sm text-gray-600 mt-1"></p>
             </div>
             <div class="card dashboard-card p-4">
               <h3 class="text-md font-semibold flex items-center">
-                <i class="fas fa-stopwatch text-blue-600 mr-2"></i> Avg. Resolution Time
+                <i class="fas fa-stopwatch text-blue-600 mr-2"></i> 
               </h3>
-              <p id="avg-resolution" class="text-2xl font-bold mt-2">0 days</p>
-              <p id="resolution-change" class="text-sm text-gray-600 mt-1">Change: N/A</p>
+              <p id="avg-resolution" class="text-2xl font-bold mt-2"></p>
+              <p id="resolution-change" class="text-sm text-gray-600 mt-1"></p>
             </div>
             <div class="card dashboard-card p-4">
               <h3 class="text-md font-semibold flex items-center">
-                <i class="fas fa-star text-blue-600 mr-2"></i> Satisfaction Rate
+                <i class="fas fa-star text-blue-600 mr-2"></i> 
               </h3>
-              <p id="satisfaction-rate" class="text-2xl font-bold mt-2">N/A</p>
-              <p id="feedback-count" class="text-sm text-gray-600 mt-1">Feedback: 0</p>
+              <p id="satisfaction-rate" class="text-2xl font-bold mt-2"></p>
+              <p id="feedback-count" class="text-sm text-gray-600 mt-1"></p>
             </div>
             <div class="card dashboard-card p-4">
               <h3 class="text-md font-semibold flex items-center">
-                <i class="fas fa-building text-blue-600 mr-2"></i> Hotspot Dept.
+                <i class="fas fa-building text-blue-600 mr-2"></i>
               </h3>
-              <p id="hotspot-dept" class="text-2xl font-bold mt-2">None</p>
-              <p id="hotspot-count" class="text-sm text-gray-600 mt-1">Count: 0</p>
+              <p id="hotspot-dept" class="text-2xl font-bold mt-2"></p>
+              <p id="hotspot-count" class="text-sm text-gray-600 mt-1"></p>
             </div>
           </div>
 

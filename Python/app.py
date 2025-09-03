@@ -379,18 +379,12 @@ def complaint_category_trends():
 @app.route('/api/ml/complaint_heatmap_data', methods=['GET'])
 def complaint_heatmap_data():
     try:
-        # Fetch complaints with lat/lng data
-        # For demonstration: assign dummy lat/lng if not present
-        # REAL IMPLEMENTATION: Ensure your complaints collection actually stores lat/lng.
-        # This dummy logic is for initial visualization only.
-
-        # Coordinates roughly for Kakamega County, Kenya
-        # Latitude: 0.2833° N to 0.5° N
-        # Longitude: 34.5° E to 34.8° E
+        
         kakamega_lat_min, kakamega_lat_max = 0.28, 0.5
         kakamega_lon_min, kakamega_lon_max = 34.5, 34.8
 
         complaints_cursor = db.complaints.find({}, {'latitude': 1, 'longitude': 1, '_id': 0})
+        
         
         heatmap_points = []
         for complaint in complaints_cursor:

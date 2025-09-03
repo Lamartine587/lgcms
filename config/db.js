@@ -15,6 +15,7 @@ const connectDB = async () => {
         console.log('1. Verify MONGO_URI in .env matches your Atlas connection string');
         console.log('2. Check your IP is whitelisted in MongoDB Atlas');
         console.log('3. Ensure database user has correct privileges');
+        console.log('4. Ensure that you have internet connection');
         process.exit(1);
     }
 };

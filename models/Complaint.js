@@ -6,7 +6,7 @@ const ComplaintSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a title'],
         enum: ['Pothole on Main Street','Garbage Not collected', 'Street Light Not Working', 'Water Leakage','Sewage Overflow','Illegal Parking',
-            'Noise Pollution', 'Road Repair Needed','Public Park Maintenance', 'Dangerous Intersection', 'Public Transport Issues', 'Community Event Request', 'Other']
+            'Noise Pollution', 'Road Repair Needed','Public Park Maintenance', 'Dangerous Intersection', 'Public Transport Issues', 'Community Event Request', 'Garbage Not Collected','Other']
     },
     category: {
         type: String,
